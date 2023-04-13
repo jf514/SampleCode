@@ -1,4 +1,4 @@
-#Articulated Vehicle Project
+# Articulated Vehicle Project
 
 This project will hopefully be a demo of articulated vehicles
 
@@ -8,4 +8,4 @@ This project will hopefully be a demo of articulated vehicles
 
 2. Run "npx serve ." from this directory
 
-3. Click on the link to open a browser
+3. Click on either link to open a browser
