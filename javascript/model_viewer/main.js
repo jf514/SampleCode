@@ -1,20 +1,34 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-// Set up the scene
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-
-const renderer = new THREE.WebGLRenderer();
+// Basic renderer
+const renderer = new THREE.WebGLRenderer( {antialias : true});
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// Load the model
+const pmremGenerator = new THREE.PMREMGenerator( renderer );
+
+// Set up the scene
+const scene = new THREE.Scene();
+scene.background = new THREE.Color( 0xbfe3dd );
+scene.environment = pmremGenerator.fromScene( new RoomEnvironment(), 0.04 ).texture;
+
+// Basic camera
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.set(0, 0, 15);
+
+// Add some coordinate axes. R = X, green = Y, blue = Z
+const axesHelper = new THREE.AxesHelper( 5 );
+scene.add( axesHelper );
+
+// Load the model. Synchronous, probably not great for big models.
 const loader = new GLTFLoader();
-loader.load('./ModelsGltfFormat/Truck.glb', function (gltf) {
+loader.load('./ModelsGltfFormat/Trailer_15ft.glb', function (gltf) {
     const model = gltf.scene;
     model.position.set(0, 0, 0);
-    model.rotation.x = Math.PI/2;
+    //model.rotation.x = Math.PI/2;
     const sc = 0.01;
     model.scale.set(sc, sc, sc);
     scene.add(model);
@@ -26,21 +40,28 @@ loader.load('./ModelsGltfFormat/Truck.glb', function (gltf) {
     }
 );
 
-const light = new THREE.DirectionalLight(0xffffff, 1)
-light.position.set(0,0,30)
-scene.add(light)
+// Allows for camera controls
+const controls = new OrbitControls( camera, renderer.domElement );
+controls.target.set( 0, 0.5, 0 );
+controls.update();
+controls.enablePan = false;
+controls.enableDamping = true;
 
-// Set up camera position
-camera.position.set(0, 0, 15);
-camera.lookAt(0,0,0);
-scene.add(camera);
+// Handle resizing window
+window.onresize = function () {
 
-  // Animation loop
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+
+    renderer.setSize( window.innerWidth, window.innerHeight );
+
+};
+
+// Animation loop
 function animate() {
     requestAnimationFrame(animate);
 
-    // Apply rotation
-    //model.rotation.z += 0.01;
+    controls.update();
 
     renderer.render(scene, camera);
 }
