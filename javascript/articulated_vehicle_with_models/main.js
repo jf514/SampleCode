@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { NURBSCurve } from 'three/addons/curves/NURBSCurve.js'
+//import { NURBSCurve } from 'three/addons/curves/NURBSCurve.js'
 
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize( window.innerWidth, window.innerHeight );
@@ -24,7 +24,7 @@ const aspect = window.innerWidth / window.innerHeight;
 //const camera = new THREE.OrthographicCamera( width * aspect / - 2, width * aspect / 2, height / 2, height / - 2, 1, 1000 );
 // Basic camera
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(0, -40, 40);
+camera.position.set(0, 0, 40);
 camera.lookAt(0, 0, 0);
 camera.rotateX(Math.PI);
 
@@ -195,6 +195,14 @@ class BicycleModel {
 		return hitchPos;
 	}
 
+	getRearWheelPos(){
+		var hX = this.x - this.lr*Math.cos(this.theta);
+		var hY = this.y - this.lr*Math.sin(this.theta);
+		var rearWheelPos = new THREE.Vector2(hX, hY);
+
+		return rearWheelPos;
+	}
+
 	getHitchVel(deltaT){
 		var omega = (this.theta - this.thetaPrev)/deltaT;
 		var vX = -omega*this.hitchDist*Math.sin(this.theta + Math.PI)+this.v*Math.cos(this.theta + this.beta);
@@ -206,7 +214,7 @@ class BicycleModel {
 
 	getPos(){
 		var pos = new THREE.Vector3;
-		pos.set(this.x, this.y, 0.0);
+		pos.set(this.x, this.y, 0);
 
 		return pos;
 	}
@@ -305,11 +313,29 @@ function figure8_2(t, period){
 	return -1*theta;
 }
 
+function make_bbox2(xmin, ymin, xmax, ymax){
+	const min1 = new THREE.Vector2(xmin, ymin);
+	const max1 = new THREE.Vector2(xmax, ymax);
+	const box1 = new THREE.Box2(min1, max1);
+
+	return box1;
+}
+
+function bbox_steer(pos){
+	var box1 = make_bbox2(-7, -50, 50, 50);
+	var box2 = make_bbox2(-150, -50, -44.5, 50);
+
+	if(box1.containsPoint(pos) || box2.containsPoint(pos))
+		return Math.PI/9;
+	else
+		return 0.0;
+}
+
 ///////////////////////////////////////////////////////////////////
 const thetaStart = -0.125*Math.PI*0;
-const trailer2 = new Trailer(5, 2.5, 6, -Math.PI);
+const trailer2 = new Trailer(5, 2.5, 6, -Math.PI/2);
 const trailer = new Trailer(5, 2.5, 5, -Math.PI/2, trailer2);
-const bike = new BicycleModel(0, 0, 0.0, 0, 0, 1.0, 2.0, 2.0, 2.5, trailer);
+const bike = new BicycleModel(-15, -3, 0.0, 0, 0, 1.0, 2.0, 2.0, 2.5, trailer);
 
 ///////////////////////////////////////////////////////////////////
 function animate() {
@@ -318,8 +344,9 @@ function animate() {
 	//cube.rotation.x += 0.01;
 	//var deltaSteer = 1.0*Math.PI*Math.sin(2*Math.PI*t/(100.0));
 
-	var steer = figure8(t, 61.5);
+	//var steer = figure8(t, 61.5);
 	//var steer = 0.125*Math.PI*Math.sin(6.28*(t/10.7));
+	var steer = bbox_steer(bike.getRearWheelPos());
 	bike.update(deltaT, steer);
 	cube.position.copy(bike.getPos());
 	cube.rotation.z = bike.theta;

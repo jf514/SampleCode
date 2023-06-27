@@ -1,16 +1,44 @@
 import * as THREE from 'three'
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const renderer = new THREE.WebGLRenderer();
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild( renderer.domElement );
+
+const pmremGenerator = new THREE.PMREMGenerator( renderer );
 
 const scene = new THREE.Scene();
+scene.background = new THREE.Color( 0xbfe3dd );
+scene.environment = pmremGenerator.fromScene( new RoomEnvironment(), 0.04 ).texture;
+
+
 //const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
 var width = 50;
 var height = 50;
 const aspect = window.innerWidth / window.innerHeight;
 const camera = new THREE.OrthographicCamera( width * aspect / - 2, width * aspect / 2, height / 2, height / - 2, 1, 1000 );
 
+// Load the model. Synchronous, probably not great for big models.
+const loader = new GLTFLoader();
+loader.load('./Models/ParkingLot.glb', function (gltf) {
+    const model = gltf.scene;
+    model.position.set(0, 0, 0);
+    model.rotation.x = Math.PI/2;
+    const sc = 0.01;
+    model.scale.set(sc, sc, sc);
+    scene.add(model);
+    }
+    , function(xhr){
+        console.log((xhr.loaded/xhr.total * 100) + "% loaded")
+    }, function(error){
+        console.log('An error occurred')
+    }
+);
 
-const renderer = new THREE.WebGLRenderer();
-renderer.setSize( window.innerWidth, window.innerHeight );
-document.body.appendChild( renderer.domElement );
+//const renderer = new THREE.WebGLRenderer();
+//renderer.setSize( window.innerWidth, window.innerHeight );
+//document.body.appendChild( renderer.domElement );
 
 const geometry = new THREE.BoxGeometry( 5, 1, 1 );
 const material = new THREE.MeshBasicMaterial( { color: 0xff0000 } );
