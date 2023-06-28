@@ -331,22 +331,42 @@ function bbox_steer(pos){
 		return 0.0;
 }
 
+class Fig8Steer {
+	constructor(angle, yCenter){
+		this.angle = angle;
+		this.yCenter = yCenter;
+		this.angleSign = 1;
+	}
+
+	getSteer(y, prevY){
+		if( (y - this.yCenter) > 0 && (prevY - this.yCenter) < 0){
+			this.angleSign = -1*this.angleSign;
+		}
+
+		return this.angleSign*this.angle;
+	}
+}
+
 ///////////////////////////////////////////////////////////////////
 const thetaStart = -0.125*Math.PI*0;
 const trailer2 = new Trailer(5, 2.5, 6, -Math.PI/2);
 const trailer = new Trailer(5, 2.5, 5, -Math.PI/2, trailer2);
-const bike = new BicycleModel(-15, -3, 0.0, 0, 0, 1.0, 2.0, 2.0, 2.5, trailer);
+const bike = new BicycleModel(1.5, 10.5, 0, Math.PI/2, 0, 1.0, 2.0, 2.0, 2.5, trailer);
+const fig8Steer = new Fig8Steer(Math.PI/11.5, 10.5);
+var prevY = 4.9;
 
 ///////////////////////////////////////////////////////////////////
 function animate() {
 	requestAnimationFrame( animate );
 
-	//cube.rotation.x += 0.01;
 	//var deltaSteer = 1.0*Math.PI*Math.sin(2*Math.PI*t/(100.0));
 
 	//var steer = figure8(t, 61.5);
 	//var steer = 0.125*Math.PI*Math.sin(6.28*(t/10.7));
-	var steer = bbox_steer(bike.getRearWheelPos());
+	//var steer = bbox_steer(bike.getRearWheelPos());
+	var steer = fig8Steer.getSteer(bike.getPos().y, prevY);
+	prevY = bike.getPos().y;
+
 	bike.update(deltaT, steer);
 	cube.position.copy(bike.getPos());
 	cube.rotation.z = bike.theta;
