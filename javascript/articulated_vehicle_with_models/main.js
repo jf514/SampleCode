@@ -147,6 +147,15 @@ window.onresize = function () {
 
 };
 
+var buttons = document.getElementsByTagName("button");
+for (let i = 0; i < buttons.length; i++) {
+  buttons[i].addEventListener("click", onButtonClick, false);
+};
+
+function onButtonClick(event) {
+  alert("I will add/remove a trailer here!");
+}
+
 ///////////////////////////////////////////////////////////////////
 class BicycleModel {
 	constructor(x, y, z, theta, steer, v, lf, lr, hitchDist, trailer) {
