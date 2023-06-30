@@ -62,58 +62,27 @@ loader.load('./Models/Truck.glb', function (gltf) {
     }
 );
 
-loader.load('./Models/Trailer_15ft.glb', function (gltf) {
-    const model = gltf.scene;
-    model.position.set(0, 0, 0);
-    model.rotation.x = Math.PI/2;
-    const sc = 0.01;
-    model.scale.set(sc, sc, sc);
-	models[2] = model;
-    scene.add(model);
-    }
-    , function(xhr){
-        console.log((xhr.loaded/xhr.total * 100) + "% loaded")
-    }, function(error){
-        console.log('An error occurred')
-    }
-);
 
-loader.load('./Models/Trailer_15ft.glb', function (gltf) {
-    const model = gltf.scene;
-    model.position.set(0, 0, 0);
-    model.rotation.x = Math.PI/2;
-    const sc = 0.01;
-    model.scale.set(sc, sc, sc);
-	models[3] = model;
-    scene.add(model);
-    }
-    , function(xhr){
-        console.log((xhr.loaded/xhr.total * 100) + "% loaded")
-    }, function(error){
-        console.log('An error occurred')
-    }
-);
+function LoadTrailer(i){
+	loader.load('./Models/Trailer_15ft.glb', function (gltf) {
+		const model = gltf.scene;
+		model.position.set(0, 0, 0);
+		model.rotation.x = Math.PI/2;
+		const sc = 0.01;
+		model.scale.set(sc, sc, sc);
+		models[i+2] = model;
+		scene.add(model);
+		}
+		, function(xhr){
+			console.log((xhr.loaded/xhr.total * 100) + "% loaded")
+		}, function(error){
+			console.log('An error occurred')
+		}
+	);
+}
 
-//const renderer = new THREE.WebGLRenderer();
-//renderer.setSize( window.innerWidth, window.innerHeight );
-//document.body.appendChild( renderer.domElement );
-
-const geometry = new THREE.BoxGeometry( 5, 1, 1 );
-const material = new THREE.MeshBasicMaterial( { color: 0xff0000 } );
-const cube = new THREE.Mesh( geometry, material );
-//scene.add( cube );
-
-// Trailer
-const tgeometry = new THREE.BoxGeometry( 5, 1, 1 );
-const tmaterial = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
-const tcube = new THREE.Mesh( tgeometry, tmaterial );
-//scene.add( tcube );
-
-// 2nd Trailer
-const ttgeometry = new THREE.BoxGeometry( 5, 1, 1 );
-const ttmaterial = new THREE.MeshBasicMaterial( { color: 0x0000ff } );
-const ttcube = new THREE.Mesh( ttgeometry, ttmaterial );
-//scene.add( ttcube );
+LoadTrailer(0);
+LoadTrailer(1);
 
 const size = 35;
 const divisions = 30;
@@ -121,13 +90,8 @@ const gridHelper = new THREE.GridHelper( size, divisions );
 gridHelper.position.set(0, 0, 0);
 gridHelper.rotation.x = Math.PI/2;
 
-//scene.add( gridHelper );
-
-//camera.position.x = 0;
-//camera.position.y = -20;
-//camera.position.z = 25;
-//camera.rotation.x = Math.PI/4;
-var deltaT = .1;
+// Simulation constants
+const deltaT = .1;
 var t = 0.0;
 
 // Allows for camera controls
@@ -147,18 +111,34 @@ window.onresize = function () {
 
 };
 
-var buttons = document.getElementsByTagName("button");
-for (let i = 0; i < buttons.length; i++) {
-  buttons[i].addEventListener("click", onButtonClick, false);
-};
+var addTrailerButton = document.getElementById("addTrailer");
+addTrailerButton.addEventListener("click", addTrailer, false);
 
-function onButtonClick(event) {
-  alert("I will add/remove a trailer here!");
+var removeTrailerButton = document.getElementById("removeTrailer");
+removeTrailerButton.addEventListener("click", removeTrailer, false);
+
+function addTrailer(event) {
+	LoadTrailer(2);
+}
+
+function removeTrailer(event){
+	removeTrailer();
 }
 
 ///////////////////////////////////////////////////////////////////
+// Physical model of kinematic bicyle and kinematic trailer
+// 
+
+// This holds a copy of current entity data
+class EntityData {
+	constructor(theta, position){
+		this.theta = theta;
+		this.position = position;
+	}
+}
+
 class BicycleModel {
-	constructor(x, y, z, theta, steer, v, lf, lr, hitchDist, trailer) {
+	constructor(x, y, z, theta, steer, v, lf, lr, hitchDist) {
 		this.x = x;
 		this.y = y;
 		this.z = z;
@@ -170,7 +150,33 @@ class BicycleModel {
 		this.v = v;
 		this.lf = lf;
 		this.lr = lr;
-		this.trailer = trailer; 
+		this.trailer = null;
+		this.endTrailer = null; 
+		this.hitchPos = null;
+		this.hitchVel = null;
+	}
+
+	addTrailer(trailer){
+		if(this.trailer == null){
+			this.trailer = trailer;
+			this.trailer.trailerIdx = 1;
+			this.endTrailer = trailer;
+			this.endTrailer.parentTrailer = this;
+		} else {
+			trailer.parentTrailer = this.endTrailer;
+			this.endTrailer.trailer = trailer;
+			this.endTrailer.trailerIdx = this.endTrailer.parentTrailer.trailerIdx + 1;
+			this.endTrailer = trailer;
+		}
+	}
+
+	removeTrailer(){
+		if(this.trailer == null)
+			return;
+		else {
+			this.endTrailer = this.endTrailer.parentTrailer;
+			this.endTrailer.trailer = null;
+		}
 	}
 
 	update(deltaT, steer){
@@ -189,11 +195,10 @@ class BicycleModel {
 		this.thetaPrev = this.theta;
 		this.theta = this.theta + (deltaT)*(this.v/(this.lf + this.lr))*Math.tan(this.steer)*Math.cos(this.beta);
 
-		if(this.trailer){
-			var hitchPos = this.getHitchPos();
-			var hitchVel = this.getHitchVel(deltaT);
-			this.trailer.update(deltaT, hitchPos, hitchVel, this.theta);
-		}
+		updateMap.set(0, new EntityData(this.theta, getPos()));
+
+		this.hitchPos = getHitchPos();
+		this.hitchVel = getHitchVel(deltaT);
 	}
 
 	getHitchPos(){
@@ -230,21 +235,23 @@ class BicycleModel {
 }
 
 class Trailer{
-	constructor(distToAxle, distToCenter, distToHitch, theta, trailer){
+	constructor(distToAxle, distToCenter, distToHitch, theta){
 		this.distToAxle = distToAxle;
 		this.distToCenter = distToCenter;
 		this.distToHitch = distToHitch;
 		this.theta = theta;
 		this.thetaPrev = theta;
-		this.trailer2 = trailer;
+		this.trailer = null;
+		this.parentTrailer = null;
+		this.bike = null;
+		this.trailerIdx = null;
+		this.center = null;
+		this.hitchPos = null;
+		this.hitchVel = null;
 	}
 
 	update(deltaT, hitchPosParent, hitchVelParent, thetaParent){
 		// World orientation:
-		// thetaRel = thetaTrailerWorld - thetaParent (world) 
-		// -> thetaTrailerWorld = thetaRel + thetaParentWorld (world)
-
-		// JEF TODO REFACTOR
 		var hitchVelX = hitchVelParent.x;
 		var hitchVelY = hitchVelParent.y;
 		var hitchPosX = hitchPosParent.x;
@@ -265,18 +272,21 @@ class Trailer{
 		this.thetaPrev = this.theta;
 		this.theta += deltaT*omega;
 
-		if(this.trailer2){
-			trailer2.update(deltaT, 
+		bike.updateMap.set(this.trailerIdx, new EntityData(theta, this.getCenter()));
+
+		this.center = this.getCenter(hitchPosParent);
+		this.hitchPos = this.calcHitchPos(hitchPosParent);
+		this.hitchVel = this.calcHitchVel(hitchVelParent);
+
+		if(this.trailer){
+			this.trailer.update(deltaT, 
 				this.getHitchPos(hitchPosParent), 
 				this.getHitchVel(deltaT, hitchVelParent), 
 				this.theta);
-		} else {
-			var x = 0;
-		}
-
-		//this.theta = thetaParent;  // JEF REMOVE
+		} 
 	}
 
+	// World origin of body coordinate frame.
 	getCenter(parentHitchPos){
 		var cX = -this.distToCenter*Math.cos(this.theta) + parentHitchPos.x;
 		var cY = -this.distToCenter*Math.sin(this.theta) + parentHitchPos.y;
@@ -285,6 +295,7 @@ class Trailer{
 		return center;
 	}
 
+	// World coordinate of the hitch. 
 	getHitchPos(parentHitchPos){
 		var hX = parentHitchPos.x - this.distToHitch*Math.cos(this.theta);
 		var hY = parentHitchPos.y - this.distToHitch*Math.sin(this.theta);
@@ -293,6 +304,8 @@ class Trailer{
 		return hitchPos;
 	}
 
+	// World velocity of the hitch location (which is point of attachment for 
+	// this trailer's child, if there is one.)
 	getHitchVel(deltaT, parentHitchVel){
 		var omega = (this.theta - this.thetaPrev)/deltaT;
 		var vX = parentHitchVel.x - omega*this.distToHitch*Math.sin(this.theta - Math.PI);
@@ -301,9 +314,16 @@ class Trailer{
 
 		return hitchVel;
 	}
+
+	getPos(){
+		return this.center;
+	}
 }
 
-///////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////
+// Steering input functions. Each describes a different
+// trajectory.
+//
 function figure8(t, period){
 	var theta = 0.125*Math.PI;
 	if(Math.floor(t/period) % 2){
@@ -312,6 +332,7 @@ function figure8(t, period){
 
 	return -1*theta;
 }
+
 
 function figure8_2(t, period){
 	var theta = 0.25*Math.PI*Math.sin(6.28*(t/period));
@@ -359,20 +380,38 @@ class Fig8Steer {
 ///////////////////////////////////////////////////////////////////
 const thetaStart = -0.125*Math.PI*0;
 const trailer2 = new Trailer(5, 2.5, 6, -Math.PI/2);
-const trailer = new Trailer(5, 2.5, 5, -Math.PI/2, trailer2);
-const bike = new BicycleModel(1.5, 10.5, 0, Math.PI/2, 0, 1.0, 2.0, 2.0, 2.5, trailer);
+const trailer = new Trailer(5, 2.5, 5, -Math.PI/2);
+const bike = new BicycleModel(1.5, 10.5, 0, Math.PI/2, 0, 1.0, 2.0, 2.0, 2.5);
+var trailerChain = [bike, trailer, trailer2]; 
+
 const fig8Steer = new Fig8Steer(Math.PI/11.5, 10.5);
 var prevY = 4.9;
+
+function updateTrailers(deltaT, steer){
+	// Update bicycle model
+	trailerChain.at(0).update(deltaT, steer);
+
+	// Update children (trailers)
+	for(let i = 1; i < trailerChain.length(); ++i){
+		trailerChain.at(i).update(hitchPos(hitchPosParent), 
+			this.getHitchVel(deltaT, hitchVelParent), 
+			this.theta);
+
+			trailerChain.at(i).update(deltaT, 
+				trailerChain.at(i-1).hitchPos, 
+				trailerChain.at(i-1).hitchVel, 
+				trailerChain.at(i-1).theta);
+	}
+}
 
 ///////////////////////////////////////////////////////////////////
 function animate() {
 	requestAnimationFrame( animate );
 
-	//var deltaSteer = 1.0*Math.PI*Math.sin(2*Math.PI*t/(100.0));
-
-	//var steer = figure8(t, 61.5);
-	//var steer = 0.125*Math.PI*Math.sin(6.28*(t/10.7));
-	//var steer = bbox_steer(bike.getRearWheelPos());
+	// Old steering methods - might be useful.
+	////var steer = figure8(t, 61.5);
+	////var steer = 0.125*Math.PI*Math.sin(6.28*(t/10.7));
+	////var steer = bbox_steer(bike.getRearWheelPos());
 	var steer = fig8Steer.getSteer(bike.getPos().y, prevY);
 	prevY = bike.getPos().y;
 
@@ -380,26 +419,30 @@ function animate() {
 	cube.position.copy(bike.getPos());
 	cube.rotation.z = bike.theta;
 
-	models[1].position.copy(bike.getPos());
-	models[1].rotation.y = bike.theta - Math.PI/2;
+	// models[1].position.copy(bike.updateMap.get(0).position);
+	// models[1].rotation.y = bike.updateMap.get(0).theta - Math.PI/2;
 
-	tcube.position.x = bike.trailer.getCenter(bike.getHitchPos()).x;
-	tcube.position.y = bike.trailer.getCenter(bike.getHitchPos()).y;
-	tcube.rotation.z = bike.trailer.theta;
+	for(let i = 0; i < numTrailers; ++i){
+		models[i+1].position.copy(trailerChain.at(i).getPos());
+		models[i+1].rotation.y = trailerChain.at(i).theta - Math.PI/2;
+	}
 
-	models[2].position.copy(bike.trailer.getCenter(bike.getHitchPos()));
-	models[2].rotation.y = bike.trailer.theta - Math.PI/2;
+	// tcube.position.x = bike.trailer.getCenter(bike.getHitchPos()).x;
+	// tcube.position.y = bike.trailer.getCenter(bike.getHitchPos()).y;
+	// tcube.rotation.z = bike.trailer.theta;
 
-	ttcube.position.x = bike.trailer.trailer2.getCenter(bike.trailer.getHitchPos(bike.getHitchPos())).x;
-	ttcube.position.y = bike.trailer.trailer2.getCenter(bike.trailer.getHitchPos(bike.getHitchPos())).y;
-	ttcube.rotation.z = bike.trailer.trailer2.theta;
+	// models[2].position.copy(bike.trailer.getCenter(bike.getHitchPos()));
+	// models[2].rotation.y = bike.trailer.theta - Math.PI/2;
 
-	models[3].position.copy(bike.trailer.trailer2.getCenter(bike.trailer.getHitchPos(bike.getHitchPos())));
-	models[3].rotation.y = bike.trailer.trailer2.theta - Math.PI/2;
+	// ttcube.position.x = bike.trailer.trailer.getCenter(bike.trailer.getHitchPos(bike.getHitchPos())).x;
+	// ttcube.position.y = bike.trailer.trailer.getCenter(bike.trailer.getHitchPos(bike.getHitchPos())).y;
+	// ttcube.rotation.z = bike.trailer.trailer.theta;
+
+	// models[3].position.copy(bike.trailer.trailer.getCenter(bike.trailer.getHitchPos(bike.getHitchPos())));
+	// models[3].rotation.y = bike.trailer.trailer.theta - Math.PI/2;
 
 	t += deltaT;
-
-	//gridHelper.rotation.x += 0.01;	
+	
 	renderer.render( scene, camera );
 }
 
