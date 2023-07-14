@@ -17,21 +17,30 @@
   				border: none;
 				color: white;
 				padding: 15px 32px;
+				width: 100%;
 				text-align: center;
 				text-decoration: none;
 				display: inline-block;
-				font-size: 16px;
+				font-size: 56px;
 				margin: 4px 2px;
 				cursor: pointer;
 				position: absolute;
+			}
+
+			.center {
+  				display: flex;
+  				justify-content: center;
+  				align-items: center;
+  				height: 200px;
+  				border: 3px solid green; 
 			}
 
 			 button {
 				margin: 20px;
 			}
 
-			.button1 {background-color: #4CAF50;} /* Green */
-			.button2 {background-color: #008CBA;} /* Blue */
+			.button1 {background-color: #000000;} /* Black */
+			.button2 {background-color: #000000;} /* Black */
 		</style>
 		<script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
 
@@ -46,8 +55,7 @@
 	</head>
 	<body>
 		<script type="module" src="/main.js"></script>
-		<!--<div style="width:100%;height:50px;text-align: center; color:white;" class="ui">Info header</div> -->
-		<button style="bottom:0" id="addTrailer" class="button button1">Add Trailer</button>
-		<button style="top:0" id="removeTrailer" class="button button2">Remove Trailer </button>
+		<button style="top:0" id="addTrailer" class="button button1">Click/Touch to Add Trailer</button>
+		<button style="bottom:0" id="removeTrailer" class="button button2">Click/Touch to Remove Trailer </button>
 	</body>
 </html>

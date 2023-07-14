@@ -12,8 +12,17 @@ const pmremGenerator = new THREE.PMREMGenerator( renderer );
 
 // Set up the scene
 const scene = new THREE.Scene();
-scene.background = new THREE.Color( 0xbfe3dd );
+scene.background = new THREE.Color( 0x000000 );
 scene.environment = pmremGenerator.fromScene( new RoomEnvironment(), 0.04 ).texture;
+
+// Grid
+const size = 35;
+const divisions = 30;
+const gridHelper = new THREE.GridHelper( size, divisions );
+gridHelper.position.set(0, 0, 0);
+//gridHelper.rotation.x = Math.PI/2;
+
+scene.add( gridHelper );
 
 // Basic camera
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -25,7 +34,7 @@ scene.add( axesHelper );
 
 // Load the model. Synchronous, probably not great for big models.
 const loader = new GLTFLoader();
-loader.load('./ModelsGltfFormat/Trailer_15ft.glb', function (gltf) {
+loader.load('./ModelsGltfFormat/Truck.glb', function (gltf) {
     const model = gltf.scene;
     model.position.set(0, 0, 0);
     //model.rotation.x = Math.PI/2;
