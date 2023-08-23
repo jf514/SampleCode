@@ -39,7 +39,7 @@ txloader.load('./Models/space_resized.png' , function(texture) {
 
 // Load the model. Synchronous, probably not great for big models.
 const loader = new GLTFLoader();
-loader.load('./Models/ParkingLot.glb', function (gltf) {
+loader.load('./Models/ParkingLot_02.glb', function (gltf) {
     const model = gltf.scene;
     model.position.set(0, 0, 0);
     model.rotation.x = Math.PI/2;
@@ -167,7 +167,6 @@ class BicycleModel {
 		this.z = z;
 		this.hitchDist = hitchDist; 
 		this.theta = theta;
-		this.thetaPrev = theta;
 		this.beta = 0;
 		this.steer = steer;
 		this.v = v;
@@ -175,23 +174,20 @@ class BicycleModel {
 		this.lr = lr; 
 		this.hitchPos = null;
 		this.hitchVel = null;
+		this.omega = 0;
 	}
 
 	update(deltaT, steer){
 		// Update steer
 		this.steer = steer;
 
-		// Midpoint method - calc midpoints
-		this.beta = Math.atan(this.lr * Math.tan(this.steer)/(this.lf+this.lr))  
-		var x_mid = this.x + this.v*(0.5*deltaT)*Math.cos(this.theta + this.beta);
-		var y_mid = this.y + this.v*(0.5*deltaT)*Math.sin(this.theta + this.beta);
-		var theta_mid = this.theta + (0.5*deltaT)*(this.v/(this.lf + this.lr))*Math.tan(steer)*Math.cos(this.beta);
+		// Geometric factors 
+		this.beta = Math.atan(this.lr * Math.tan(this.steer)/(this.lf+this.lr))
+		this.omega = (this.v/(this.lf + this.lr))*Math.tan(steer)*Math.cos(this.beta);  
 		
-		// Full update
-		this.x = this.x + this.v*(deltaT)*Math.cos(theta_mid + this.beta);
-		this.y = this.y + this.v*(deltaT)*Math.sin(theta_mid + this.beta);
-		this.thetaPrev = this.theta;
-		this.theta = this.theta + (deltaT)*(this.v/(this.lf + this.lr))*Math.tan(this.steer)*Math.cos(this.beta);
+		this.x = this.x + this.v*(deltaT)*Math.cos(this.theta + this.beta);
+		this.y = this.y + this.v*(deltaT)*Math.sin(this.theta + this.beta);
+		this.theta = this.theta + (deltaT)*this.omega;
 
 		this.hitchPos = this.getHitchPos();
 		this.hitchVel = this.getHitchVel(deltaT);
@@ -214,9 +210,8 @@ class BicycleModel {
 	}
 
 	getHitchVel(deltaT){
-		var omega = (this.theta - this.thetaPrev)/deltaT;
-		var vX = -omega*this.hitchDist*Math.sin(this.theta + Math.PI)+this.v*Math.cos(this.theta + this.beta);
-		var vY = omega*this.hitchDist*Math.cos(this.theta + Math.PI)+this.v*Math.sin(this.theta + this.beta);
+		var vX = -this.omega*this.hitchDist*Math.sin(this.theta + Math.PI)+this.v*Math.cos(this.theta + this.beta);
+		var vY = this.omega*this.hitchDist*Math.cos(this.theta + Math.PI)+this.v*Math.sin(this.theta + this.beta);
 		var hitchVel = new THREE.Vector2(vX, vY);
 
 		return hitchVel;
@@ -236,13 +231,13 @@ class Trailer{
 		this.distToCenter = distToCenter;
 		this.distToHitch = distToHitch;
 		this.theta = theta;
-		this.thetaPrev = theta;
 		this.center = null;
 		this.hitchPos = null;
 		this.hitchVel = null;
+		this.omega = null;
 	}
 
-	update(deltaT, hitchPosParent, hitchVelParent, thetaParent){
+	update(deltaT, hitchPosParent, hitchVelParent){
 		// World orientation:
 		var hitchVelX = hitchVelParent.x;
 		var hitchVelY = hitchVelParent.y;
@@ -251,18 +246,17 @@ class Trailer{
 
 		const hitchVel = Math.sqrt(hitchVelX*hitchVelX + hitchVelY*hitchVelY);
 	
-		var omega = 0;
+		this.omega = 0;
 		if(hitchVel != 0){
 			const invHitchVel = 1.0/hitchVel;
 			const hitchAngleSign = Math.cos(this.theta)*hitchVelY - Math.sin(this.theta)*hitchVelX > 0 ? 1 : -1;
 			const hitchVelAngle = hitchAngleSign*Math.acos(invHitchVel*(Math.cos(this.theta)*hitchVelX + 
 				Math.sin(this.theta)*(hitchVelY)));
 			const hitchVelPerpendicular = Math.sin(hitchVelAngle)*hitchVel;
-			omega = hitchVelPerpendicular/this.distToAxle;
+			this.omega = hitchVelPerpendicular/this.distToAxle;
 		}
 
-		this.thetaPrev = this.theta;
-		this.theta += deltaT*omega;
+		this.theta += deltaT*this.omega;
 
 		this.center = this.calcCenter(hitchPosParent);
 		this.hitchPos = this.calcHitchPos(hitchPosParent);
@@ -290,9 +284,8 @@ class Trailer{
 	// World velocity of the hitch location (which is point of attachment for 
 	// this trailer's child, if there is one.)
 	calcHitchVel(deltaT, parentHitchVel){
-		var omega = (this.theta - this.thetaPrev)/deltaT;
-		var vX = parentHitchVel.x - omega*this.distToHitch*Math.sin(this.theta - Math.PI);
-		var vY = parentHitchVel.y + omega*this.distToHitch*Math.cos(this.theta - Math.PI);
+		var vX = parentHitchVel.x + this.omega*this.distToHitch*Math.sin(this.theta);
+		var vY = parentHitchVel.y - this.omega*this.distToHitch*Math.cos(this.theta);
 		var hitchVel = new THREE.Vector2(vX, vY);
 
 		return hitchVel;
@@ -379,8 +372,7 @@ function updateTrailers(deltaT, steer){
 	for(let i = 1; i < trailerChain.length; ++i){
 			trailerChain.at(i).update(deltaT, 
 				trailerChain.at(i-1).hitchPos, 
-				trailerChain.at(i-1).hitchVel, 
-				trailerChain.at(i-1).theta);
+				trailerChain.at(i-1).hitchVel);
 	}
 }
 
