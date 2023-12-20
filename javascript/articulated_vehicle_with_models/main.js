@@ -3,42 +3,48 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
+///////////////////////////////////////////////////////////////////
+// Set up the 3D scene.
+
+// Render.
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize( window.innerWidth, window.innerHeight );
 document.body.appendChild( renderer.domElement );
-
 const pmremGenerator = new THREE.PMREMGenerator( renderer );
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color( 0x000000 );
 scene.environment = pmremGenerator.fromScene( new RoomEnvironment(), 0.04 ).texture;
 
-// Models
-let models = new Array();
-
-//const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
-var width = 50;
-var height = 50;
+// Basic camera. 
+const width = 50;
+const height = 50;
 const aspect = window.innerWidth / window.innerHeight;
-//const camera = new THREE.OrthographicCamera( width * aspect / - 2, width * aspect / 2, height / 2, height / - 2, 1, 1000 );
-// Basic camera
+
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.set(0, -50, 40);
 camera.lookAt(0, 0, 0);
 camera.rotateX(Math.PI);
 
-// Add some coordinate axes. R = X, green = Y, blue = Z
+// Add some coordinate axes. R = X, green = Y, blue = Z.
 const axesHelper = new THREE.AxesHelper( 5 );
 scene.add( axesHelper );
 
-//Load background texture
+//Load background texture.
 const txloader = new THREE.TextureLoader();
 txloader.load('./Models/space_resized.png' , function(texture) {
              scene.background = texture;  
             });
 
-// Load the model. Synchronous, probably not great for big models.
+///////////////////////////////////////////////////////////////////
+// Load models.
+
+let models = new Array();
+
+// Load the model. Asynchronous, make sure this can be handled in main thread.
 const loader = new GLTFLoader();
+
+// Parking lot - backgound.
 loader.load('./Models/ParkingLot_02.glb', function (gltf) {
     const model = gltf.scene;
     model.position.set(0, 0, 0);
@@ -46,8 +52,6 @@ loader.load('./Models/ParkingLot_02.glb', function (gltf) {
     const sc = 0.01;
     model.scale.set(sc, sc, sc);
 	models[0] = model;
-	//var len = models.push(model);
-	//console.log("Models len = " + len);
     scene.add(model);
     }
     , function(xhr){
@@ -57,6 +61,7 @@ loader.load('./Models/ParkingLot_02.glb', function (gltf) {
     }
 );
 
+// Load the truck - lead vehicle.
 loader.load('./Models/Truck.glb', function (gltf) {
     const model = gltf.scene;
     model.position.set(0, 0, 0);
@@ -73,7 +78,7 @@ loader.load('./Models/Truck.glb', function (gltf) {
     }
 );
 
-
+// Function to load i-th instance of a trailer.
 function LoadTrailer(i){
 	loader.load('./Models/Trailer_15ft.glb', function (gltf) {
 		const model = gltf.scene;
@@ -92,20 +97,22 @@ function LoadTrailer(i){
 	);
 }
 
+// Start with two trailers.
 LoadTrailer(0);
 LoadTrailer(1);
 
-const size = 35;
-const divisions = 30;
-const gridHelper = new THREE.GridHelper( size, divisions );
-gridHelper.position.set(0, 0, 0);
-gridHelper.rotation.x = Math.PI/2;
+// Grid helper... useful for debugging velocity/scale issues.
+//const size = 35;
+//const divisions = 30;
+//const gridHelper = new THREE.GridHelper( size, divisions );
+//gridHelper.position.set(0, 0, 0);
+//gridHelper.rotation.x = Math.PI/2;
 
-// Simulation constants
+// Simulation constants.
 const deltaT = .1;
 var t = 0.0;
 
-// Allows for camera controls
+// Allows for camera controls.
 const controls = new OrbitControls( camera, renderer.domElement );
 controls.target.set( 0, 0.5, 0 );
 controls.update();
@@ -116,16 +123,14 @@ controls.maxAzimuthAngle = 0;
 controls.enablePan = false;
 controls.enableDamping = true;
 
-// Handle resizing window
+// Handle resizing window.
 window.onresize = function () {
-
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
-
     renderer.setSize( window.innerWidth, window.innerHeight );
-
 };
 
+// Button GUI controls.
 var addTrailerButton = document.getElementById("addTrailer");
 addTrailerButton.addEventListener("click", addTrailer, false);
 
@@ -150,7 +155,6 @@ function removeTrailer(event){
 
 ///////////////////////////////////////////////////////////////////
 // Physical model of kinematic bicyle and kinematic trailer
-// 
 
 // This holds a copy of current entity data
 class EntityData {
@@ -160,6 +164,7 @@ class EntityData {
 	}
 }
 
+// Classic Kinematic Bicycle Model
 class BicycleModel {
 	constructor(x, y, z, theta, steer, v, lf, lr, hitchDist) {
 		this.x = x;
@@ -225,6 +230,7 @@ class BicycleModel {
 	}
 }
 
+// Kinematic unicycle (Kinematic Trailer)
 class Trailer{
 	constructor(distToAxle, distToCenter, distToHitch, theta){
 		this.distToAxle = distToAxle;
@@ -297,46 +303,11 @@ class Trailer{
 }
 
 /////////////////////////////////////////////////////////////////
-// Steering input functions. Each describes a different
-// trajectory.
+// Steering input functions.
 //
-function figure8(t, period){
-	var theta = 0.125*Math.PI;
-	if(Math.floor(t/period) % 2){
-		return theta; 
-	}
-
-	return -1*theta;
-}
-
-
-function figure8_2(t, period){
-	var theta = 0.25*Math.PI*Math.sin(6.28*(t/period));
-	if(Math.floor(t/period) % 2){
-		return theta; 
-	}
-
-	return -1*theta;
-}
-
-function make_bbox2(xmin, ymin, xmax, ymax){
-	const min1 = new THREE.Vector2(xmin, ymin);
-	const max1 = new THREE.Vector2(xmax, ymax);
-	const box1 = new THREE.Box2(min1, max1);
-
-	return box1;
-}
-
-function bbox_steer(pos){
-	var box1 = make_bbox2(-7, -50, 50, 50);
-	var box2 = make_bbox2(-150, -50, -44.5, 50);
-
-	if(box1.containsPoint(pos) || box2.containsPoint(pos))
-		return Math.PI/9;
-	else
-		return 0.0;
-}
-
+// Steer by Figure 8 pattern. Steers by a constant absulute angle,
+// but changes the sign each time the lead vehicle y coordinate 
+// becomes greater than yCenter
 class Fig8Steer {
 	constructor(angle, yCenter){
 		this.angle = angle;
@@ -354,21 +325,23 @@ class Fig8Steer {
 }
 
 ///////////////////////////////////////////////////////////////////
+// Set up dynamic simulation
 const thetaStart = -0.125*Math.PI*0;
 const trailer2 = new Trailer(3, 2, 5, -Math.PI/2);
 const trailer = new Trailer(3, 2, 5, -Math.PI/2);
 const bike = new BicycleModel(1.5, 10.5, 0, Math.PI/2, 0, 1.0, 2.0, 1.3, 2.9);
-//var trailerChain = [bike, trailer, trailer2];
 var trailerChain = [bike, trailer, trailer2]; 
 
 const fig8Steer = new Fig8Steer(Math.PI/11.5, 10.5);
 var prevY = 4.9;
 
+// Update the dynamic models together.
 function updateTrailers(deltaT, steer){
-	// Update bicycle model
+	// Update bicycle model.
 	trailerChain.at(0).update(deltaT, steer);
 
-	// Update children (trailers)
+	// Update children (trailers). (Must happen in order of
+	// parent then child.)
 	for(let i = 1; i < trailerChain.length; ++i){
 			trailerChain.at(i).update(deltaT, 
 				trailerChain.at(i-1).hitchPos, 
@@ -377,47 +350,41 @@ function updateTrailers(deltaT, steer){
 }
 
 ///////////////////////////////////////////////////////////////////
+// Main animation loop.
+
+// These implement constant time steps across different
+// devices, etc..
+const fixedTimeStep = 1/60;
+let accumulator = 0;
+const clock = new THREE.Clock();
+
+// The main workhorse.
 function animate() {
-	requestAnimationFrame( animate );
+	const deltaTime = clock.getDelta();
+	accumulator += deltaTime;
 
-	// Old steering methods - might be useful.
-	////var steer = figure8(t, 61.5);
-	////var steer = 0.125*Math.PI*Math.sin(6.28*(t/10.7));
-	////var steer = bbox_steer(bike.getRearWheelPos());
-	var steer = fig8Steer.getSteer(bike.getPos().y, prevY);
-	prevY = bike.getPos().y;
+	// Accumlator only steps when sufficient time has passed.
+	while(accumulator >= fixedTimeStep){
+		var steer = fig8Steer.getSteer(bike.getPos().y, prevY);
+		prevY = bike.getPos().y;
 
-	//bike.update(deltaT, steer);
-	//cube.position.copy(bike.getPos());
-	//cube.rotation.z = bike.theta;
+		updateTrailers(deltaT, steer);
 
-	//models[1].position.x; //.copy(bike.getPos());
-	// models[1].rotation.y = bike.updateMap.get(0).theta - Math.PI/2;
+		// Check that loading is complete (completed in seperate thread).
+		if(models.length == trailerChain.length + 1)
+		{
+			for(let i = 0; i < trailerChain.length; ++i){
+				models[i+1].position.copy(trailerChain.at(i).getPos());
+				models[i+1].rotation.y = trailerChain.at(i).theta - Math.PI/2;
+			}
+		}
 
-	updateTrailers(deltaT, steer);
-
-	for(let i = 0; i < trailerChain.length; ++i){
-		models[i+1].position.copy(trailerChain.at(i).getPos());
-		models[i+1].rotation.y = trailerChain.at(i).theta - Math.PI/2;
+		t += deltaT;
+		accumulator -= fixedTimeStep;
 	}
-
-	// tcube.position.x = bike.trailer.getCenter(bike.getHitchPos()).x;
-	// tcube.position.y = bike.trailer.getCenter(bike.getHitchPos()).y;
-	// tcube.rotation.z = bike.trailer.theta;
-
-	// models[2].position.copy(bike.trailer.getCenter(bike.getHitchPos()));
-	// models[2].rotation.y = bike.trailer.theta - Math.PI/2;
-
-	// ttcube.position.x = bike.trailer.trailer.getCenter(bike.trailer.getHitchPos(bike.getHitchPos())).x;
-	// ttcube.position.y = bike.trailer.trailer.getCenter(bike.trailer.getHitchPos(bike.getHitchPos())).y;
-	// ttcube.rotation.z = bike.trailer.trailer.theta;
-
-	// models[3].position.copy(bike.trailer.trailer.getCenter(bike.trailer.getHitchPos(bike.getHitchPos())));
-	// models[3].rotation.y = bike.trailer.trailer.theta - Math.PI/2;
-
-	t += deltaT;
-	
 	renderer.render( scene, camera );
+
+	requestAnimationFrame( animate );
 }
 
 animate();
