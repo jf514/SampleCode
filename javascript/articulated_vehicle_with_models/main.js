@@ -57,7 +57,7 @@ loader.load('./Models/ParkingLot_02.glb', function (gltf) {
     , function(xhr){
         console.log((xhr.loaded/xhr.total * 100) + "% loaded")
     }, function(error){
-        console.log('An error occurred')
+        console.log("")
     }
 );
 
