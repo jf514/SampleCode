@@ -40,32 +40,24 @@
             flex: 1;
         }
 
-        .bottom-button-container {
+		.bottom-slider-container {
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             position: absolute;
             width: 100%;
             bottom: 0;
             margin-bottom: 20px;
+		}
+        
+        .slider {
+            width: 60%;
+            margin: 0 20%;
         }
 
-        .bottom-button {
-            border: none;
-            color: white;
-            padding: 30px 32px;
-            height: 110px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 32px;
-            margin: 4px 2px;
-            cursor: pointer;
+        .steering-slider {
+            width: 100%;
         }
 
-        .steerLeft, .steerRight {
-            background-color: #000000;
-            flex: 1;
-        }
     </style>
     <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
 
@@ -84,9 +76,8 @@
         <button id="addTrailer" class="button addTrailer">Add Trailer</button>
         <button id="removeTrailer" class="button removeTrailer">Remove Trailer</button>
     </div>
-	<div class="bottom-button-container" style="bottom:0">
-        <button id="steerLeft" class="bottom-button steerLeft">Steer Left</button>
-		<button id="steerRight" class="bottom-button steerRight">Steer Right</button>
+    <div class="bottom-slider-container" style="bottom:0">
+        <input id="steeringSlider" class="slider steering-slider" type="range" min="-1" max="1" step="0.1" value="0">
     </div>
 
 

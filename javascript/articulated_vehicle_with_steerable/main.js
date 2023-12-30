@@ -138,11 +138,20 @@ addTrailerButton.addEventListener("click", addTrailer, false);
 var removeTrailerButton = document.getElementById("removeTrailer");
 removeTrailerButton.addEventListener("click", removeTrailer, false);
 
-var steerLeftButton = document.getElementById("steerLeft");
-steerLeftButton.addEventListener("click", steerLeft, false);
+var steerSlider = document.getElementById("steeringSlider");
+steerSlider.addEventListener("input", updateSteer);
+steerSlider.value = -1*steer/(Math.PI/6)
 
-var steerRightButton = document.getElementById("steerRight");
-steerRightButton.addEventListener("click", steerRight, false);
+function updateSteer(event){
+	steer = -1*event.target.value*(Math.PI/6);
+	console.log(steer); 
+}
+
+// var steerLeftButton = document.getElementById("steerLeft");
+// steerLeftButton.addEventListener("click", steerLeft, false);
+
+// var steerRightButton = document.getElementById("steerRight");
+// steerRightButton.addEventListener("click", steerRight, false);
 
 var turnDir = 1;
 function addTrailer(event) {
