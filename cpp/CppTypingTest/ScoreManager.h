@@ -2,29 +2,31 @@
 #define JASONS_SAMPLE_CODE_CPP_TYPING_TEST_CPP_TYPING_TEST_H
 #pragma once
 
+#include <cassert>
 #include <map>
 #include <string>
 
+// Basic class for managing score records and their retreival.
 class ScoreManager
 {
 public:
-    explicit ScoreManager(const char* filename) :
-        filename(filename) {}
+    explicit ScoreManager(const std::string& filename) :
+        filename_(filename) {
+            assert(!filename.empty());
+        }
 
     bool load();
     void addScore(const std::string& name, float score, const std::string& date);
-    size_t getScoreRank(float score);
-    bool write();
+    size_t getScoreRank(float score) const;
+    bool write() const;
+    void printScores() const;
 
 private:
-    const std::string filename;
+    const std::string filename_;
 
-    struct ScoreInfo {
-        std::string name;
-        std::string date;
-    };
+    using ScoreInfo = std::pair<std::string, std::string>;
 
-    std::map<float, ScoreInfo, std::greater<float>> scores;
+    std::multimap<float, ScoreInfo, std::greater<float>> scores_;
 };
 
 #endif // JASONS_SAMPLE_CODE_CPP_TYPING_TEST_CPP_TYPING_TEST_H
