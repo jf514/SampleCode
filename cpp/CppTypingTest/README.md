@@ -11,5 +11,5 @@ make main
 ```
 To run:
 ```
-./main
+./test
 ```
