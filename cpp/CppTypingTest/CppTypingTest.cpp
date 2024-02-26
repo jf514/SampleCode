@@ -4,15 +4,17 @@
 #include <ctime>
 #include <iostream>
 #include <sstream>
+#include <span>
 #include <string>
 #include <vector>
 
 namespace TypingTest {
 
-static const std::string scoreDataFilename{"cpp_typing_test_scores.txt"}; 
+// Default location to store test score leaderboard.
+const std::string CppTypingTest::sDefaultScoreFilename{"cpp_typing_test_scores.txt"};
 
-const std::vector<std::string> words = 
-    {
+// C++20 keywords
+const std::vector<std::string> keywords = {
         "align_as", 
         "align_of",
         "and",
@@ -111,54 +113,6 @@ const std::vector<std::string> words =
         "xor_eq"
     }; 
 
-const std::vector<std::string> words_very_short = 
-    {
-        "align_as", 
-        "align_of",
-        "and",
-        "and_eq",
-        "asm",
-        "atomic_cancel"
-    };
-
-const std::vector<std::string> words_short = 
-    {
-        "align_as", 
-        "align_of",
-        "and",
-        "and_eq",
-        "asm",
-        "atomic_cancel",
-        "atomic_commit",
-        "atomic_noexcept",
-        "auto",
-        "bitand",
-        "bitor",
-        "bool",
-        "break",
-        "case",
-        "catch",
-        "char",
-        "char8_t",
-        "char16_t",
-        "class",
-        "compl",
-        "concept",
-        "const",
-        "consteval",
-        "constexpr",
-        "constinit",
-        "const_cast",
-        "continue",
-        "co_await",
-        "co_return",
-        "co_yield",
-        "decltype",
-        "default",
-        "delete",
-        "do",
-    };
-
 // Utility function to put current date into a std::string.
 // This obselesced by C++20 
 std::string getDate(){
@@ -177,30 +131,41 @@ std::string getDate(){
     int year = now_tm->tm_year + 1900; // years since 1900
 
     std::ostringstream os;
-
     os << day << "-" << month << "-" << year;
     return os.str();
 }
 
+// Utility to get input from command std::cin:
+std::string getInput(){
+    std::string input;
+    std::getline(std::cin, input);
 
+    return input;
+}
+
+// Main routine 
 void CppTypingTest::Run() const
 {
+    // Start screen.
     std::cout << "***********************\n";
     std::cout << "** Welcome to the C++ Timed Typing Test!! \n";
     std::cout << "***********************\n";
     
-    ScoreManager sm(scoreDataFilename);
-    if(!sm.load()){
-        std::cout << "Couldn't find data file. Aborting.\n";
-        return;
+    // Deduce data file.
+    std::string loadFile;
+    if(scorefile_.empty()){
+        loadFile = sDefaultScoreFilename;
+    } else {
+        loadFile = scorefile_;
     }
-    
+
+    // RAII - file resource managed by lifetime of this object
+    ScoreManager sm(loadFile);
+
+    // Initial prompt.
     while(true){
-        std::cout << "Hit return to start the test, type s to show leaderboard, or ctrl-c to abort:";
-
-        std::string input;
-        std::getline(std::cin, input);
-
+        std::cout << "Hit return to start the test, type s to show leaderboard, or ctrl-c to abort: ";
+        std::string input = getInput();
         if(input == "s" || input == "S"){
             sm.printScores();
         } else {
@@ -208,51 +173,61 @@ void CppTypingTest::Run() const
         }
     }
 
-
     // Start timer
     auto start = std::chrono::system_clock::now();
-
     bool testCompleted = true;
     size_t totalChars = 0;
 
-    // Using the short list for now.
-    auto words = words_short;
-    for (const auto& word : words)
-    {
-        bool passed = false;
-        while(!passed)
-        {
-            std::cout << word << "\n"; 
-            std::string wIn;
-            std::cin >> wIn;
-
-            if(wIn == word)
-            {
-                passed = true;
+   // Main loop - allow user to type all words, or type XXX. 
+   // (XXX is a secret developer option which allows user to break out
+   // early, while still running post game logic.)
+   std::cout << "NW: " << numWords_ << "\n";
+   auto span = std::span(keywords).first(numWords_);
+    for (const auto& word : span){
+        std::string wIn;
+        // Loop until user types word correctly, or types XXX to 
+        // end application early.
+        while(true){
+            std::cout << word << "\n";
+            wIn = getInput();
+            if(wIn == word){
+                // Add chars to total, count the return character.
                 totalChars += word.length() + 1;
+                break;
             }
-            else if(wIn == "XXX")
-            {
-                testCompleted = false;
+            else if(wIn == "XXX"){
+                // Secret debug option 
                 break;
             }
         }
 
-        if(testCompleted == false)
+        // Exit to post game logic.
+        // An easter egg!
+        if(wIn == "XXX")
             break;
     }
 
+    // End timer.
     auto end = std::chrono::system_clock::now();
     std::chrono::duration<double> elapsed_seconds = end-start;
 
     // Check scores:
     std::cout << "Elapsed time: " << elapsed_seconds.count() << " seconds \n";
     const float wpm = 60.0 * static_cast<float>(totalChars)/(elapsed_seconds.count() * 5.0);
-    std::cout << "WPM (# chars/5) = " << wpm << "\n";
+    std::cout << "WPM (# chars/5) = " << wpm << "\n\n";
 
-    sm.getScoreRank(wpm);
-    sm.addScore("JEF", wpm, getDate());
-    sm.write();
+    // Prompt for leader board inclusion.
+    std::cout << "Add your initials to leaderboard? (Y/N) \n";
+    std::string input = getInput();
+    if(input == "y" || input == "Y"){
+        std::cout << "Input initials: \n";
+        std::string initials = getInput();
+        //sm.getScoreRank(wpm);
+        sm.addScore(initials, wpm, getDate());
+        sm.write();
+        std::cout << "Current leaderboard:\n";
+        sm.printScores();
+    } 
 }
 
 } // TypingTest

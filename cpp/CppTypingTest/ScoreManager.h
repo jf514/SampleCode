@@ -11,21 +11,21 @@ class ScoreManager
 {
 public:
     explicit ScoreManager(const std::string& filename) :
-        filename_(filename) {
-            assert(!filename.empty());
-        }
+        filename_(filename) {   
+            load();
+    }
 
-    bool load();
     void addScore(const std::string& name, float score, const std::string& date);
     size_t getScoreRank(float score) const;
     bool write() const;
     void printScores() const;
+    std::size_t numScores() const;
 
 private:
+    bool load();
+
     const std::string filename_;
-
     using ScoreInfo = std::pair<std::string, std::string>;
-
     std::multimap<float, ScoreInfo, std::greater<float>> scores_;
 };
 

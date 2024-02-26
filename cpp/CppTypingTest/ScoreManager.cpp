@@ -4,11 +4,12 @@
 #include <fstream>
 #include <sstream>
 
-bool ScoreManager::load() 
+bool ScoreManager::load()
 {   
     std::ifstream my_file(filename_);        // open the file
-    if(!my_file.is_open())
+    if(!my_file.is_open()){
         return false;
+    }
 
     std::string line;                       // helper var to store current line
     while(getline(my_file, line)) {         // read one line from the file
@@ -52,7 +53,7 @@ bool ScoreManager::write() const
             << ele.second.second 
             << std::endl; 
     }
-
+    
     outfile.close();
 
     return true; 
@@ -62,12 +63,21 @@ void ScoreManager::printScores() const {
     std::size_t count = 0;
 
     std::cout << "*****************************\n";
-    std::cout << "Recorded Scores:\n";
-    for(const auto& score : scores_){
-        ++count;
-        std::cout << count << ": " 
-            << score.first << ", " 
-            << score.second.first << ", " 
-            << score.second.second << "\n";
+    if(scores_.empty()){
+        std::cout << "Currently no recorded scores.\n";
+    } else {
+        std::cout << "Recorded Scores:\n";
+        for(const auto& score : scores_){
+            ++count;
+            std::cout << count << ": " 
+                << score.first << ", " 
+                << score.second.first << ", " 
+                << score.second.second << "\n";
+        }
     }
+    std::cout << "*****************************\n";
+}
+
+std::size_t ScoreManager::numScores() const {
+    return scores_.size();
 }
