@@ -21,8 +21,8 @@ std::string GetDate() {
     auto ymd = std::chrono::year_month_day{dp};
 
     std::ostringstream os;
-    os << static_cast<unsigned>(ymd.day()) 
-        << "-" << static_cast<unsigned>(ymd.month()) 
+    os << static_cast<unsigned>(ymd.month()) 
+        << "-" << static_cast<unsigned>(ymd.day()) 
         << "-" << static_cast<int>(ymd.year());
     return os.str();
 }
@@ -69,10 +69,12 @@ void CppTypingTest::Run() const {
 
     // Initial prompt.
     while (true) {
-        std::cout << "Hit return to start the test, type 's' to show the leaderboard, or ctrl-c to abort: ";
+        std::cout << "Hit return to start the test, type 's' to show the leaderboard, 'q' or ctrl-c to abort: ";
         std::string input = GetInput();
         if (input == "s" || input == "S") {
             sm.PrintScores();
+        } else if (input == "q" || input == "Q") {
+            return;
         } else {
             break;
         }

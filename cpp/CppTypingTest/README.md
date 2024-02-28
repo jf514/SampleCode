@@ -1,9 +1,9 @@
-# Sample Code: Command line C++ Typing Test
+# `type_cpp`: Command line C++ Typing Test
 
 This is a short program intended as a code sample and demonstration of engineering practices for Jason Foat.
 
-This is a simple command line application to facilitate the memorization of the (ever growing) list C++ of keywords. [^1] 
-The intent is to stimulate kinesthetic learning by typing keywords for speed. Upon execution you'll be prompted with a key word, 
+It is a simple command line application intended to facilitate the memorization of the (ever growing) list C++ of keywords. [^1] 
+The strategy is to stimulate kinesthetic learning by typing keywords for speed. Upon execution you'll be prompted with a key word, 
 which you must type in accurately in order to advance to the next. And so on. After completion of all the keywords, you're 
 then presented with your speed measured in WPM, and given the option to save the time to a leaderboard stored locally.
 
