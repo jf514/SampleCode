@@ -5,8 +5,10 @@
 #include <string>
 #include <unistd.h>
 
+namespace {
+
 // Prints useage string below.
-void printUseage(std::string progName){
+void printUseage(const std::string& progName){
     std::string useage = 
     "usage: " + progName + " [-n num_words] [-f score_file] [-pd]\n"
     "\n"
@@ -22,6 +24,8 @@ void printUseage(std::string progName){
     std::cerr << useage;
 }
 
+} // namespace
+
 int main(int argc, char* argv[]) {
 
     int numWords = 0;
@@ -35,28 +39,35 @@ int main(int argc, char* argv[]) {
         switch (opt) {
             case 'n':
                 numWords = std::stoi(optarg);
-                if(numWords < 1){
+                if(numWords < 0){
                     printUseage(progName);
-                    abort();
+                    return EXIT_FAILURE;
                 }
                 break;
             case 'f':
                 scoreFile = (char*)(optarg);
-                std::cout << "SF: " << scoreFile << "\n";
                 break;
             case 'p':
                 printDefaultScoreFile = true;
                 break;
             case '?': // If unknown option or missing argument
-                printUseage(progName);
-                return EXIT_FAILURE;
             default:
                 printUseage(progName);
-                abort();
+                return EXIT_FAILURE;
         }
     }
+    
+    // Handle extra args not handled above, eg
+    // progName blah, eg ./test extra_arg 
+    // will be caught here, since blah isn't preceded by a "-",
+    // (which is handled by "?" above)
+    if(optind != argc){
+        printUseage(progName);
+        return EXIT_FAILURE;
+    }
 
-    TypingTest::CppTypingTest test(scoreFile, numWords);
+    // Call the test handler.
+    SampleCode::CppTypingTest test(scoreFile, numWords);
     test.Run();
 
     return EXIT_SUCCESS;

@@ -13,7 +13,7 @@
             "-n",
             "5",
             //"-f",
-            //"125"
+            "125"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/cpp/CppTypingTest",
