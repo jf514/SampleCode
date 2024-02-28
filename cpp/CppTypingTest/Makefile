@@ -1,5 +1,5 @@
 main: ScoreManager CppTypingTest
-	g++ -g -O0 -o test main.cpp ScoreManager.o CppTypingTest.o -std=c++17
+	g++ -g -O0 -o type_cpp type_cpp.cpp ScoreManager.o CppTypingTest.o -std=c++17
 
 ScoreManager: ScoreManager.h ScoreManager.cpp
 	g++ -c -g -O0 -o ScoreManager.o ScoreManager.cpp -std=c++20
