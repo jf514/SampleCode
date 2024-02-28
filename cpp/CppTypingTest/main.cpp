@@ -1,74 +1,72 @@
-
-#include "CppTypingTest.h"
-
 #include <iostream>
 #include <string>
 #include <unistd.h>
+#include "CppTypingTest.h"
 
 namespace {
 
-// Prints useage string below.
-void printUseage(const std::string& progName){
-    std::string useage = 
-    "usage: " + progName + " [-n num_words] [-f score_file] [-pd]\n"
-    "\n"
-    "\t -n num_words: Number of words to use in test, if less than total.\n"
-    "\t               (Must be less than the total # of keywords, and greater than 0.\n"
-    "\t                Ignored otherwise.)\n"
-    "\n"           
-    "\t -f score_file: File to load scores from, creates if it doesn't exist.\n"
-    "\t               (If not specified, uses default)\n"
-    "\n"
-    "\t -p: Print the default score file name.\n\n";
+// Prints usage string below.
+void PrintUsage(const std::string& progName) {
+  std::string usage =
+      "usage: " + progName +
+      " [-n num_words] [-f score_file] [-p]\n"
+      "\n"
+      "\t -n num_words: Number of words to use in test, if less than total.\n"
+      "\t               (Must be less than the total number of keywords and greater than 0.\n"
+      "\t                Ignored otherwise.)\n"
+      "\n"
+      "\t -f score_file: File to load scores from, creates if it doesn't exist.\n"
+      "\t               (If not specified, uses default)\n"
+      "\n"
+      "\t -p: Print the default score file name.\n\n";
 
-    std::cerr << useage;
+  std::cerr << usage;
 }
 
-} // namespace
+}  // namespace
 
 int main(int argc, char* argv[]) {
+  int numWords = 0;
+  std::string scoreFile;
+  bool printDefaultScoreFile = false;
 
-    int numWords = 0;
-    std::string scoreFile;
-    bool printDefaultScoreFile = false;
-
-    // Parse command-line options
-    std::string progName(argv[0]);
-    int opt;
-    while ((opt = getopt(argc, argv, "n:f:p")) != -1) {
-        switch (opt) {
-            case 'n':
-                numWords = std::stoi(optarg);
-                if(numWords < 0){
-                    printUseage(progName);
-                    return EXIT_FAILURE;
-                }
-                break;
-            case 'f':
-                scoreFile = (char*)(optarg);
-                break;
-            case 'p':
-                printDefaultScoreFile = true;
-                break;
-            case '?': // If unknown option or missing argument
-            default:
-                printUseage(progName);
-                return EXIT_FAILURE;
+  // Parse command-line options
+  const std::string progName(argv[0]);
+  int opt;
+  while ((opt = getopt(argc, argv, "n:f:p")) != -1) {
+    switch (opt) {
+      case 'n':
+        numWords = std::stoi(optarg);
+        if (numWords < 0) {
+          PrintUsage(progName);
+          return EXIT_FAILURE;
         }
-    }
-    
-    // Handle extra args not handled above, eg
-    // progName blah, eg ./test extra_arg 
-    // will be caught here, since blah isn't preceded by a "-",
-    // (which is handled by "?" above)
-    if(optind != argc){
-        printUseage(progName);
+        break;
+      case 'f':
+        scoreFile = optarg;
+        break;
+      case 'p':
+        printDefaultScoreFile = true;
+        break;
+      case '?':  // If unknown option or missing argument
+      default:
+        PrintUsage(progName);
         return EXIT_FAILURE;
     }
+  }
 
-    // Call the test handler.
-    SampleCode::CppTypingTest test(scoreFile, numWords);
-    test.Run();
+  // Handle extra args not handled above, e.g.
+  // ./test extra_arg will be caught here, 
+  // since extra_arg isn't preceded by a "-",
+  // (which is handled by "?" above)
+  if (optind != argc) {
+    PrintUsage(progName);
+    return EXIT_FAILURE;
+  }
 
-    return EXIT_SUCCESS;
+  // Call the test handler.
+  SampleCode::CppTypingTest test(scoreFile, numWords);
+  test.Run();
+
+  return EXIT_SUCCESS;
 }
