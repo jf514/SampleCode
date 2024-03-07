@@ -9,8 +9,7 @@
 namespace SampleCode {
 
 // C++20 keywords
-constexpr size_t numCppKeywords = 96;
-static const std::array<std::string, numCppKeywords> Cpp20Keywords = {
+static const std::array<std::string, 96> Cpp20Keywords = {
         "align_as", 
         "align_of",
         "and",

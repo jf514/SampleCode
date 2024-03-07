@@ -8,6 +8,6 @@ CppTypingTest: CppTypingTest.h CppTypingTest.cpp
 	g++ -c -g -O0 -o CppTypingTest.o CppTypingTest.cpp -std=c++20
 
 clean: 
-	rm CppTypingTest.o ScoreManager.o test
+	rm CppTypingTest.o ScoreManager.o type_cpp
  
   
