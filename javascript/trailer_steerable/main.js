@@ -109,8 +109,10 @@ LoadTrailer(1);
 //gridHelper.rotation.x = Math.PI/2;
 
 // Simulation constants.
+var firstMouseDown = false;
 const deltaT = .1;
-var steer = 20*Math.PI/180.;
+var steer = Math.PI/6.;
+
 var t = 0.0;
 
 // // Allows for camera controls.
@@ -141,6 +143,9 @@ removeTrailerButton.addEventListener("click", removeTrailer, false);
 var steering = null
 var wheel = document.getElementById("wheel")
 const updateSteering = (mouseX) => {
+	if(!firstMouseDown){
+		firstMouseDown = true;
+	}
   steering = -(1 - (mouseX/window.innerWidth)*2);
   steer = -.5*steering*Math.PI/2;
   
@@ -182,6 +187,9 @@ var lastMouse = 0
 //document.addEventListener("touchmove", (e)=> {console.log('Touchmove!')})
 
 document.addEventListener("touchstart",(e)=>{
+	if(!firstMouseDown){
+		firstMouseDown = true;
+	}
 	console.log('Touchstart!'); 
 	isMouseDown = true; /*lastMouse = e.clientX*/ 
 })
@@ -194,7 +202,7 @@ document.addEventListener("touchmove", (e) => {
         e.movementX = 10*(touch.pageX - previousTouch.pageX);
         //e.movementY = touch.pageY - previousTouch.pageY;
 
-        mouseMove(e.movementX);
+        //mouseMove(e.movementX);
     };
 
     previousTouch = touch;
@@ -402,9 +410,8 @@ class Fig8Steer {
 ///////////////////////////////////////////////////////////////////
 // Set up dynamic simulation
 var steerInp = 0
-const thetaStart = -0.125*Math.PI*0;
-const trailer2 = new Trailer(3, 2, 5, -Math.PI/2);
-const trailer = new Trailer(3, 2, 5, -Math.PI/2);
+const trailer2 = new Trailer(3, 2, 5, Math.PI/2);
+const trailer = new Trailer(3, 2, 5, Math.PI/2);
 const bike = new BicycleModel(1.5, 10.5, 0, Math.PI/2, 0, 1.0, 2.0, 1.3, 2.9);
 var trailerChain = [bike, trailer, trailer2]; 
 
@@ -447,7 +454,11 @@ function animate() {
 		//var steer = fig8Steer.getSteer(bike.getPos().y, prevY);
 		//prevY = bike.getPos().y;
 
-		updateTrailers(deltaT, steer);
+		//if (steer == null){
+		//	updateTrailers(deltaT, math.PI/3);
+		//} else {
+			updateTrailers(deltaT, steer);
+		//}
 
 		// Check that loading is complete (completed in seperate thread).
 		if(models.length == trailerChain.length + 1)
@@ -463,8 +474,9 @@ function animate() {
 	}
 	renderer.render( scene, camera );
 
-	if(isMouseDown == false)
+	if(firstMouseDown && isMouseDown == false)
 	{
+		console.log("decay!");
 		var deltaS = 0.01
 		steer -= Math.sign(steer)*deltaS
 		//var wheel = document.getElementById("wheel")
