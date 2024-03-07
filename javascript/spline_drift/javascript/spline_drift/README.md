@@ -1,4 +1,4 @@
-# Spline Spline Drifting Project
+# Spline Drifting Project
 
 This project demonstrates a very simple model for ["drifting"](https://en.wikipedia.org/wiki/Drifting_(motorsport)#:~:text=Drifting%20is%20a%20driving%20technique,a%20corner%20or%20a%20turn) in motorsports. This is essentially controlled oversteer of a vehicle, with the intent of taking tighter corners at higher velocities than normal Ackerman steering would allow. I'm calling it Spline Drifting, because it uses splines for the trajectory, and then uses the curvature of the spline to calcualte the drift angle. Simple! So simple, in fact, that it must have been thought up before, though I've never seen it anywhere else. [^1]
 
