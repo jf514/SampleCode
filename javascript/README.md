@@ -1,0 +1,3 @@
+# Javascript Demo Projects
+
+These projects are specific demos of various physics related designs, written using the marvelous 3js platform. I chose 3js because I think it's a neat way to show interactive 3D models in a machine agnostic way. My main development target is Chrome, but hopefully they should work on both desktop and mobile variants of Firefox and Safari, too.  Caveat: I'm a hobbyist, and not a javascript developer. Please don't expect professional level javascript code. I'm just dabbling!
