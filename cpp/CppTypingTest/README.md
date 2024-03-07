@@ -14,7 +14,7 @@ To compile:
 ```
 make
 ```
-Useage
+Useage:
 ```
       usage: ./type_cpp [-n num_words] [-f score_file] [-p]
 
