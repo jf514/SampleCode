@@ -24,11 +24,10 @@ const aspect = window.innerWidth / window.innerHeight;
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.set(0, -50, 50);
 camera.lookAt(0, 0, 0);
-//camera.rotateX(Math.PI);
 
-// Add some coordinate axes. R = X, green = Y, blue = Z.
-const axesHelper = new THREE.AxesHelper( 5 );
-scene.add( axesHelper );
+// DEBUG: Add some coordinate axes. R = X, green = Y, blue = Z.
+//const axesHelper = new THREE.AxesHelper( 5 );
+//scene.add( axesHelper );
 
 //Load background texture.
 const txloader = new THREE.TextureLoader();
@@ -101,21 +100,22 @@ function LoadTrailer(i){
 LoadTrailer(0);
 LoadTrailer(1);
 
-// Grid helper... useful for debugging velocity/scale issues.
+///////////////////////////////////////////////////////////////////
+// DEBUG: Grid helper... useful for debugging velocity/scale issues.
 //const size = 35;
 //const divisions = 30;
 //const gridHelper = new THREE.GridHelper( size, divisions );
 //gridHelper.position.set(0, 0, 0);
 //gridHelper.rotation.x = Math.PI/2;
+///////////////////////////////////////////////////////////////////
 
 // Simulation constants.
-var firstMouseDown = false;
 const deltaT = .1;
-var steer = Math.PI/6.;
-
+var steerModel = Math.PI/6.;  
 var t = 0.0;
 
-// // Allows for camera controls.
+///////////////////////////////////////////////////////////////////
+// DEBUG: Allows for camera controls. Enable for dynamic camera.
 // const controls = new OrbitControls( camera, renderer.domElement );
 // controls.target.set( 0, 0.5, 0 );
 // controls.update();
@@ -125,7 +125,9 @@ var t = 0.0;
 // controls.maxAzimuthAngle = 0;
 // controls.enablePan = false;
 // controls.enableDamping = true;
+///////////////////////////////////////////////////////////////////
 
+///////////////////////////////////////////////////////////////////
 // Handle resizing window.
 window.onresize = function () {
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -133,6 +135,7 @@ window.onresize = function () {
     renderer.setSize( window.innerWidth, window.innerHeight );
 };
 
+///////////////////////////////////////////////////////////////////
 // Button GUI controls.
 var addTrailerButton = document.getElementById("addTrailer");
 addTrailerButton.addEventListener("click", addTrailer, false);
@@ -140,82 +143,42 @@ addTrailerButton.addEventListener("click", addTrailer, false);
 var removeTrailerButton = document.getElementById("removeTrailer");
 removeTrailerButton.addEventListener("click", removeTrailer, false);
 
-var steering = null
-var wheel = document.getElementById("wheel")
+///////////////////////////////////////////////////////////////////
+// Steering UI
+var steeringUI = null
+var firstMouseDown = false;
+var wheelUI = document.getElementById("wheel")
 const updateSteering = (mouseX) => {
+	console.log("Update Steer")
 	if(!firstMouseDown){
 		firstMouseDown = true;
 	}
-  steering = -(1 - (mouseX/window.innerWidth)*2);
-  steer = -.5*steering*Math.PI/2;
-  
-  wheel.style.display = "block";
-  wheel.style.transform = `rotate(${steering*90}deg)`;
+	steeringUI = -(1 - (mouseX/window.innerWidth)*2);
+	steerModel = -.5*steeringUI*Math.PI/2;
+
+	wheelUI.style.display = "block";
+	wheelUI.style.transform = `rotate(${steeringUI*90}deg)`;
 }
 document.addEventListener("pointerdown",(e)=>updateSteering(e.clientX))
 document.addEventListener("pointermove",(e)=>{
-	//console.log(`clientX = ${e.clientX}`)
-	//console.log(`movementX = ${e.movementX}`)
-	if(steering != null) updateSteering(e.clientX)
+	if(steeringUI != null) updateSteering(e.clientX)
 })
 document.addEventListener("pointerup",()=>{
-	steering = null
-  	wheel.style.display = "none"
+	console.log("Pointer up")
+	steeringUI = null;
+	wheelUI.style.display = "none";
 })
 
-// var steerMax = 45*(Math.PI/180)
-// const mouseMove = (mouseMoveX) => {
-// 	if(isMouseDown) {
-// 		steer -= 0.0005*mouseMoveX
-// 		steer = Math.sign(steer)*Math.min(Math.abs(steer), steerMax)
-// 	}
-// 	//wheel.style.display = "block";
-// 	//wheel.style.transform = `rotate(${steer}rad)`;
-// }
-
-var isMouseDown = false
-var lastMouse = 0
-
-// document.addEventListener("pointerdown",(e)=>{ 
-// 	isMouseDown = true; /*lastMouse = e.clientX*/ 
-// })
-// document.addEventListener("pointermove", (e)=>mouseMove(e.movementX))
-// document.addEventListener("pointerup", (e)=>{ isMouseDown = false})
-
-//document.addEventListener("touchstart", (e)=> {console.log('Touchstart!')})
-//document.addEventListener("touchend", (e)=> {console.log('Touchend!')})
-//document.addEventListener("touchmove", (e)=> {console.log('Touchmove!')})
-
-document.addEventListener("touchstart",(e)=>{
-	if(!firstMouseDown){
-		firstMouseDown = true;
-	}
-	console.log('Touchstart!'); 
-	isMouseDown = true; /*lastMouse = e.clientX*/ 
-})
-var previousTouch;
-document.addEventListener("touchmove", (e) => {
-    const touch = e.touches[0];
-
-    if (previousTouch) {
-        // be aware that these only store the movement of the first touch in the touches array
-        e.movementX = 10*(touch.pageX - previousTouch.pageX);
-        //e.movementY = touch.pageY - previousTouch.pageY;
-
-        //mouseMove(e.movementX);
-    };
-
-    previousTouch = touch;
-});
-document.addEventListener("touchend", (e)=>{ isMouseDown = false; previousTouch = null})
-
-var turnDir = 1;
+///////////////////////////////////////////////////////////////////
+// Add and remove trailer. We use turnDir to alternate initial trailer
+// angle every add.
+var trailerDir = 1;
 function addTrailer(event) {
 	var len = trailerChain.length;
 	LoadTrailer(len - 1);
 	var theta = trailerChain[len - 1].theta;
-	trailerChain.push(new Trailer(3, 2, 5, theta+turnDir*Math.PI/2));
-	turnDir *= -1;
+	trailerChain.push(new Trailer(3, 2, 5, theta+trailerDir*Math.PI/2));
+	trailerDir *= -1;
 }
 
 function removeTrailer(event){
@@ -225,27 +188,8 @@ function removeTrailer(event){
 	}
 }
 
-function steerLeft(event){
-	steer += 5*Math.PI/180;
-	steer = Math.min(steer, 45*Math.PI/180);
-}
-
-function steerRight(event){
-	steer -= 5*Math.PI/180;
-	steer = Math.max(steer, -45*Math.PI/180);
-}
-
-
 ///////////////////////////////////////////////////////////////////
 // Physical model of kinematic bicyle and kinematic trailer
-
-// This holds a copy of current entity data
-class EntityData {
-	constructor(theta, position){
-		this.theta = theta;
-		this.position = position;
-	}
-}
 
 // Classic Kinematic Bicycle Model
 class BicycleModel {
@@ -385,41 +329,16 @@ class Trailer{
 	}
 }
 
-/////////////////////////////////////////////////////////////////
-// Steering input functions.
-//
-// Steer by Figure 8 pattern. Steers by a constant absulute angle,
-// but changes the sign each time the lead vehicle y coordinate 
-// becomes greater than yCenter
-class Fig8Steer {
-	constructor(angle, yCenter){
-		this.angle = angle;
-		this.yCenter = yCenter;
-		this.angleSign = 1;
-	}
-
-	getSteer(y, prevY){
-		if( (y - this.yCenter) > 0 && (prevY - this.yCenter) < 0){
-			this.angleSign = -1*this.angleSign;
-		}
-
-		return this.angleSign*this.angle;
-	}
-}
-
 ///////////////////////////////////////////////////////////////////
 // Set up dynamic simulation
-var steerInp = 0
 const trailer2 = new Trailer(3, 2, 5, Math.PI/2);
 const trailer = new Trailer(3, 2, 5, Math.PI/2);
 const bike = new BicycleModel(1.5, 10.5, 0, Math.PI/2, 0, 1.0, 2.0, 1.3, 2.9);
 var trailerChain = [bike, trailer, trailer2]; 
 
-const fig8Steer = new Fig8Steer(Math.PI/11.5, 10.5);
-var prevY = 4.9;
 
 // Update the dynamic models together.
-function updateTrailers(deltaT, steer){
+function updateDynamics(deltaT, steer){
 	// Update bicycle model.
 	trailerChain.at(0).update(deltaT, steer);
 
@@ -429,6 +348,17 @@ function updateTrailers(deltaT, steer){
 			trailerChain.at(i).update(deltaT, 
 				trailerChain.at(i-1).hitchPos, 
 				trailerChain.at(i-1).hitchVel);
+	}
+}
+
+// Update visual models from dynamic models above
+function updateGraphics(){
+	if(models.length == trailerChain.length + 1)
+	{
+		for(let i = 0; i < trailerChain.length; ++i){
+			models[i+1].position.copy(trailerChain.at(i).getPos());
+			models[i+1].rotation.y = trailerChain.at(i).theta - Math.PI/2;
+		}
 	}
 }
 
@@ -443,49 +373,30 @@ const clock = new THREE.Clock();
 
 // The main workhorse.
 function animate() {
-
-	//console.log()
 	const deltaTime = clock.getDelta();
 	accumulator += deltaTime;
 
 	// Accumlator only steps when sufficient time has passed.
 	while(accumulator >= fixedTimeStep){
-		console.log(`steer = ${steer}`)
-		//var steer = fig8Steer.getSteer(bike.getPos().y, prevY);
-		//prevY = bike.getPos().y;
-
-		//if (steer == null){
-		//	updateTrailers(deltaT, math.PI/3);
-		//} else {
-			updateTrailers(deltaT, steer);
-		//}
-
-		// Check that loading is complete (completed in seperate thread).
-		if(models.length == trailerChain.length + 1)
-		{
-			for(let i = 0; i < trailerChain.length; ++i){
-				models[i+1].position.copy(trailerChain.at(i).getPos());
-				models[i+1].rotation.y = trailerChain.at(i).theta - Math.PI/2;
-			}
-		}
+		updateDynamics(deltaT, steerModel);
+		updateGraphics();
 
 		t += deltaT;
 		accumulator -= fixedTimeStep;
 	}
+
 	renderer.render( scene, camera );
 
-	if(firstMouseDown && isMouseDown == false)
+	// Handle steering return to 0 after
+	// steering UI event.
+	if(firstMouseDown)
 	{
-		console.log("decay!");
 		var deltaS = 0.01
-		steer -= Math.sign(steer)*deltaS
-		//var wheel = document.getElementById("wheel")
-		//wheel.style.display = "block";
-		//wheel.style.transform = `rotate(${steer}rad)`;
+		steerModel -= Math.sign(steerModel)*deltaS;
 	}
 
-	wheel.style.display = "block";
-	wheel.style.transform = `rotate(${-steer}rad)`;
+	wheelUI.style.display = "block";
+	wheelUI.style.transform = `rotate(${-steerModel}rad)`;
 
 	requestAnimationFrame( animate );
 }
