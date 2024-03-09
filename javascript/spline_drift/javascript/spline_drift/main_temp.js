@@ -22,13 +22,14 @@ const height = 50;
 const aspect = window.innerWidth / window.innerHeight;
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(0, -30, 60);
+camera.position.set(0, -40, 60);
+//camera.position.set(0,0,60);
 camera.lookAt(0, 0, 0);
-//camera.rotateX(Math.PI);
 
-// Add some coordinate axes. R = X, green = Y, blue = Z.
-const axesHelper = new THREE.AxesHelper( 5 );
-scene.add( axesHelper );
+//Debug Helper:
+//Add some coordinate axes. R = X, green = Y, blue = Z.
+//const axesHelper = new THREE.AxesHelper( 5 );
+//scene.add( axesHelper );
 
 //Load background texture.
 const txloader = new THREE.TextureLoader();
@@ -61,11 +62,12 @@ loader.load('./Models/ParkingLot_02.glb', function (gltf) {
     }
 );
 
-// Load the truck - lead vehicle.
+// Load the truck.
 loader.load('./Models/Truck.glb', function (gltf) {
     const model = gltf.scene;
     model.position.set(0, 0, 0);
     model.rotation.x = Math.PI/2;
+    model.rotation.y = -Math.PI/2;
     const sc = 0.01;
     model.scale.set(sc, sc, sc);
 	models[1] = model;
@@ -77,29 +79,6 @@ loader.load('./Models/Truck.glb', function (gltf) {
         console.log('An error occurred')
     }
 );
-
-// Bezier functions
-
-// Define the required math functions
-// function addVectors(v1, v2) {
-//     return v1[i] + v2[i];
-// }
-
-// function subVectors(v1, v2) {
-//     return v1[i] - v2[i];
-// }
-
-// function mulVectorScalar(v, scalar) {
-//     return x * scalar;
-// }
-
-// function dotProduct(v1, v2) {
-//     return v1[i] * v2[i]).reduce((sum, curr) => sum + curr, 0);
-// }
-
-// function norm(v) {
-//     return Math.sqrt(dotProduct(v, v));
-// }
 
 // Function to evaluate a point on the cubic Bezier curve given parameter t
 function bezierPoint(P0, P1, P2, P3, t) {
@@ -160,11 +139,10 @@ function rotateVector(vector, angle) {
 
 function calcDriftTheta(k, theta, pow){
 	var sign = Math.sign(theta);
-	theta = k * sign * Math.abs(theta) ** pow;
-
-
-
-	return Math.min(Math.max(theta, -Math.PI/2), Math.PI/2);
+    theta = k * sign * Math.abs(theta) ** pow;
+    
+    var maxAngle = 75.*Math.PI/180.;
+	return Math.min(Math.max(theta, -maxAngle), maxAngle);
 }
 	
 // Function to get the z rotation of a vector confined to the XY plane
@@ -185,16 +163,16 @@ const deltaT = .1;
 var steer = 20*Math.PI/180.;
 var t = 0.0;
 
-// // Allows for camera controls.
-// const controls = new OrbitControls( camera, renderer.domElement );
-// controls.target.set( 0, 0.5, 0 );
-// controls.update();
-// controls.minPolarAngle = Math.PI/4-0.001; //Math.PI/2;
-// controls.maxPolarAngle = Math.PI/4+0.001; // Math.PI - Math.PI/6;
-// controls.minAzimuthAngle = 0;
-// controls.maxAzimuthAngle = 0;
-// controls.enablePan = false;
-// controls.enableDamping = true;
+// Camera controls.
+const controls = new OrbitControls( camera, renderer.domElement );
+controls.target.set( 0, 0.5, 0 );
+controls.update();
+controls.minPolarAngle = Math.PI/2;
+controls.maxPolarAngle = Math.PI - Math.PI/6;
+controls.minAzimuthAngle = 0;
+controls.maxAzimuthAngle = 0;
+controls.enablePan = false;
+controls.enableDamping = true;
 
 // Handle resizing window.
 window.onresize = function () {
@@ -202,16 +180,6 @@ window.onresize = function () {
     camera.updateProjectionMatrix();
     renderer.setSize( window.innerWidth, window.innerHeight );
 };
-
-// Button GUI controls.
-// var addTrailerButton = document.getElementById("addTrailer");
-// addTrailerButton.addEventListener("click", addTrailer, false);
-
-// var removeTrailerButton = document.getElementById("removeTrailer");
-// removeTrailerButton.addEventListener("click", removeTrailer, false);
-
-///////////////////////////////////////////////////////////////////
-// Physical model of kinematic bicyle and kinematic trailer
 
 // Control Points
 var P0 
@@ -222,14 +190,14 @@ const cP = [
     new THREE.Vector3(30, 0, .1),
 ];
 
-// Draw Control Points
-const sphereGeometry = new THREE.SphereGeometry(0.05, 32, 32);
-const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-cP.forEach(point => {
-    const sphere = new THREE.Mesh(sphereGeometry, material);
-    sphere.position.copy(point);
-    scene.add(sphere);
-});
+// // Draw Control Points
+// const sphereGeometry = new THREE.SphereGeometry(0.5, 32, 32);
+// const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+// cP.forEach(point => {
+//     const sphere = new THREE.Mesh(sphereGeometry, material);
+//     sphere.position.copy(point);
+//     scene.add(sphere);
+// });
 
 // Bezier Curve
 const curve = new THREE.CubicBezierCurve3(
@@ -241,18 +209,10 @@ const curve = new THREE.CubicBezierCurve3(
 
 const points = curve.getPoints(50);
 const geometry = new THREE.BufferGeometry().setFromPoints(points);
-const lineMaterial = new THREE.LineBasicMaterial({ color: 0x0000ff });
+const lineMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
 const bezierCurve = new THREE.Line(geometry, lineMaterial);
 
 scene.add(bezierCurve);
-
-// This holds a copy of current entity data
-class EntityData {
-	constructor(theta, position){
-		this.theta = theta;
-		this.position = position;
-	}
-}
 
 ///////////////////////////////////////////////////////////////////
 // Main animation loop.
@@ -268,30 +228,45 @@ var t = 0
 
 // The main workhorse.
 function animate() {
-
-	//console.log()
-	const deltaTime = clock.getDelta();
-
+    const deltaTime = clock.getDelta();
 	if(models.length > 1){
-		var p = bezierPoint(cP[0],
+        // Calculate rotation:
+        // Align model to x - axis
+        var theta = -Math.PI/2;
+        
+        // Set up a variable to hold rotations
+        // relative to x-axis 
+        var deltaTheta = 0;
+
+        // Add rotation from spline slope
+        var bezAngle = getZRotation(bezierFirstDerivative(cP[0], cP[1], cP[2], cP[3], t));
+        deltaTheta += bezAngle;	
+
+        // Add rotation due to drift from curvature
+		var thetaK = 10*signedCurvature(cP[0], cP[1], cP[2], cP[3], t);
+        var driftAngle = calcDriftTheta(1.25, thetaK, 1.65);
+        deltaTheta += driftAngle;
+
+        // Add to base model theta
+        theta += deltaTheta;
+        models[1].rotation.y = theta;
+        
+        // Set translation - transform car location
+        // so center of front wheels follows the spline.
+        var transCM = bezierPoint(cP[0],
 			cP[1],
 			cP[2],
-			cP[3], t);
-		models[1].position.copy(p);
+            cP[3], t);
+            
+        var transFrontWheel = new THREE.Vector3(Math.cos(deltaTheta), Math.sin(deltaTheta), 0);
+        var distToFronWheel = 2;
+        transFrontWheel.multiplyScalar(-distToFronWheel);
+        transFrontWheel.add(transCM);    
+        models[1].position.copy(transFrontWheel);
 
-		var theta = getZRotation(bezierFirstDerivative(cP[0],
-			cP[1],
-			cP[2],
-			cP[3], t));
-		theta -= 3.1415926/2;			
-
-		 var thetaK = 10*signedCurvature(cP[0],
-		 	cP[1],
-		 	cP[2],
-			 cP[3], t);
-		theta += calcDriftTheta(1.25, thetaK, 1.65);
-		console.log(theta);
-		models[1].rotation.y = theta;
+        // console.log(transFrontWheel);
+        // console.log(transCM);
+        // console.log(models[1].position);
 	}
 
 	renderer.render( scene, camera );
@@ -300,6 +275,7 @@ function animate() {
 
 	t += velocity*fixedTimeStep;
 
+    // Warp to start of spline
 	if(t > 1)
 		t = 0;
 }
