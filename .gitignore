@@ -1,5 +1,6 @@
 # Mac specific
 *.DS_Store
+*.DSYM
 
 # Prerequisites
 *.d
@@ -33,3 +34,5 @@
 *.exe
 *.out
 *.app
+main
+test
