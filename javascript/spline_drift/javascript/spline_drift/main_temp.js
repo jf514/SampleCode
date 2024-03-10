@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { NURBSCurve } from 'three/addons/curves/NURBSCurve.js';
 
 ///////////////////////////////////////////////////////////////////
 // Set up the 3D scene.
@@ -80,54 +81,105 @@ loader.load('./Models/Truck.glb', function (gltf) {
     }
 );
 
-// Function to evaluate a point on the cubic Bezier curve given parameter t
-function bezierPoint(P0, P1, P2, P3, t) {
-    const oneMinusT = 1 - t;
-    const oneMinusT2 = oneMinusT * oneMinusT;
-    const oneMinusT3 = oneMinusT2 * oneMinusT;
-    const t2 = t * t;
-    const t3 = t2 * t;
+// Nurbs Curve Stuff
 
-    const x = oneMinusT3 * P0.x + 3 * oneMinusT2 * t * P1.x + 3 * oneMinusT * t2 * P2.x + t3 * P3.x;
-    const y = oneMinusT3 * P0.y + 3 * oneMinusT2 * t * P1.y + 3 * oneMinusT * t2 * P2.y + t3 * P3.y;
-    const z = oneMinusT3 * P0.z + 3 * oneMinusT2 * t * P1.z + 3 * oneMinusT * t2 * P2.z + t3 * P3.z;
+	// NURBS curve
 
-    return new THREE.Vector3(x, y, z);
+	var nurbsControlPoints = [];
+	var nurbsKnots = [];
+	const nurbsDegree = 3;
+    
+    // var R = 10;
+    // var P0 = new THREE.Vector4(R,0,.1,1);
+    // var P1 = new THREE.Vector4(0,R,.1,1);
+    // var P2 = new THREE.Vector4(-R,0,.1,1);
+    // var P3 = new THREE.Vector4(R,0,.1,1);
+
+    // nurbsControlPoints.push(P0);
+    // nurbsControlPoints.push(P1);
+    // nurbsControlPoints.push(P2);
+    // nurbsControlPoints.push(P3);
+
+    // nurbsKnots.push(0);
+    // nurbsKnots.push(0);
+    // nurbsKnots.push(0);
+    // nurbsKnots.push(0);
+
+    // nurbsKnots.push(1);
+    // nurbsKnots.push(1);
+    // nurbsKnots.push(1);
+    // nurbsKnots.push(1);
+
+
+// Assuming you have THREE.js included in your environment
+function createEquilateralTriangleWithInterleavedMidpoints(sideLength) {
+    // Calculate the height of the triangle
+    const height = Math.sqrt(3) / 2 * sideLength;
+    const halfHeight = height / 2;
+
+    // Vertices of the triangle, centered such that one midpoint can be at the origin
+    const p1 = new THREE.Vector4(-sideLength / 2, -halfHeight, 0.1, 1);
+    const p2 = new THREE.Vector4(sideLength / 2 , -halfHeight, 0.1, 1);
+    const p3 = new THREE.Vector4(0, height - halfHeight - 35, 0.1, 1);
+
+    // Calculate midpoints between vertices
+    const midpoint12 = new THREE.Vector4((p1.x + p2.x) / 2, (p1.y + p2.y) / 2, 0.1, 1); // Midpoint between p1 and p2
+    const midpoint23 = new THREE.Vector4((p2.x + p3.x) / 2, (p2.y + p3.y) / 2, 0.1, 1); // Midpoint between p2 and p3
+    const midpoint31 = new THREE.Vector4((p3.x + p1.x) / 2, (p3.y + p1.y) / 2, 0.1, 1); // Midpoint between p3 and p1
+
+    // Create an array that interleaves vertices with midpoints in a counter-clockwise orientation
+    // Start with midpoint12 to ensure the first and last points are the same (at origin adjustment if needed)
+    var points = [
+        midpoint12, p1, midpoint31, p3, midpoint23, p2, new THREE.Vector4().copy(midpoint12)
+    ];
+
+    return points;
 }
 
-
-// Function to compute the first derivative of the cubic Bezier curve
-function bezierFirstDerivative(P0, P1, P2, P3, t) {
-    const dt = 1e-5; // Small value for approximating the derivative
-    const t1 = Math.max(0, t - dt);
-    const t2 = Math.min(1, t + dt);
-
-    const p1 = bezierPoint(P0, P1, P2, P3, t1);
-    const p2 = bezierPoint(P0, P1, P2, P3, t2);
-
-    return p2.clone().sub(p1).multiplyScalar(1 / (t2 - t1));
+function addConstantOffsetToVectorList(vectorList, center) {
+    var i = 0;
+    vectorList.forEach(vector => {
+        console.log(i++);
+        vector.x += center.x;
+        vector.y += center.y;
+        vector.z += center.z;
+    });
 }
 
-// Function to compute the second derivative of the cubic Bezier curve
-function bezierSecondDerivative(P0, P1, P2, P3, t) {
-    const dt = 1e-5; // Small value for approximating the derivative
-    const t1 = Math.max(0, t - dt);
-    const t2 = Math.min(1, t + dt);
-
-    const dp1 = bezierFirstDerivative(P0, P1, P2, P3, t1);
-    const dp2 = bezierFirstDerivative(P0, P1, P2, P3, t2);
-
-    return dp2.clone().sub(dp1).multiplyScalar(1 / (t2 - t1));
+// Example usage
+var sideLength = 80; // Side length of the equilateral triangle
+nurbsControlPoints = createEquilateralTriangleWithInterleavedMidpoints(sideLength);
+// Deep copy function for a list of THREE.Vector4 objects
+function deepCopyVectorList(vectorList) {
+    return vectorList.map(vector => new THREE.Vector4().copy(vector));
 }
 
-// Function to compute the signed curvature of the cubic Bezier curve at a given parameter t
-function signedCurvature(P0, P1, P2, P3, t) {
-    const dT_dt = bezierFirstDerivative(P0, P1, P2, P3, t);
-    const ddT_dt2 = bezierSecondDerivative(P0, P1, P2, P3, t);
-    const curvature = (dT_dt.x * ddT_dt2.y - dT_dt.y * ddT_dt2.x) / Math.pow(dT_dt.length(), 3);
-    return Math.sign(curvature) * Math.abs(curvature);
-}
+// Make a deep copy of the original list
+const outpts = deepCopyVectorList(nurbsControlPoints);
+console.log(outpts);
+addConstantOffsetToVectorList(nurbsControlPoints, new THREE.Vector4(0, 10, 0, 0));
+nurbsKnots = [0, 0, 0, 0, 0.45, 0.5, 0.65, 1, 1, 1, 1];
+console.log(nurbsControlPoints);
 
+const nurbsCurve = new NURBSCurve( nurbsDegree, nurbsKnots, nurbsControlPoints );
+
+const nurbsGeometry = new THREE.BufferGeometry();
+nurbsGeometry.setFromPoints( nurbsCurve.getPoints( 100 ) );
+
+const nurbsMaterial = new THREE.LineBasicMaterial( { color: 0x000000 } );
+
+const nurbsLine = new THREE.Line( nurbsGeometry, nurbsMaterial );
+//nurbsLine.position.set( 200, - 100, 0 );
+scene.add( nurbsLine );
+
+const nurbsControlPointsGeometry = new THREE.BufferGeometry();
+nurbsControlPointsGeometry.setFromPoints( nurbsCurve.controlPoints );
+
+const nurbsControlPointsMaterial = new THREE.LineBasicMaterial( { color: 0x333333, opacity: 0.25, transparent: true } );
+
+const nurbsControlPointsLine = new THREE.Line( nurbsControlPointsGeometry, nurbsControlPointsMaterial );
+nurbsControlPointsLine.position.copy( nurbsLine.position );
+scene.add( nurbsControlPointsLine );
 
 function rotateVector(vector, angle) {
     const rotationMatrix = [[Math.cos(angle), -Math.sin(angle)], [Math.sin(angle), Math.cos(angle)]];
@@ -239,11 +291,11 @@ function animate() {
         var deltaTheta = 0;
 
         // Add rotation from spline slope
-        var bezAngle = getZRotation(bezierFirstDerivative(cP[0], cP[1], cP[2], cP[3], t));
+        var bezAngle = getZRotation(curveFirstDerivative(nurbsCurve, t));
         deltaTheta += bezAngle;	
 
         // Add rotation due to drift from curvature
-		var thetaK = 10*signedCurvature(cP[0], cP[1], cP[2], cP[3], t);
+		var thetaK = 10*curveSignedCurvature(nurbsCurve, t);
         var driftAngle = calcDriftTheta(1.25, thetaK, 1.65);
         deltaTheta += driftAngle;
 
@@ -253,11 +305,7 @@ function animate() {
         
         // Set translation - transform car location
         // so center of front wheels follows the spline.
-        var transCM = bezierPoint(cP[0],
-			cP[1],
-			cP[2],
-            cP[3], t);
-            
+        var transCM = nurbsCurve.getPoint(t);
         var transFrontWheel = new THREE.Vector3(Math.cos(deltaTheta), Math.sin(deltaTheta), 0);
         var distToFronWheel = 2;
         transFrontWheel.multiplyScalar(-distToFronWheel);
