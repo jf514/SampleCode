@@ -89,97 +89,90 @@ loader.load('./Models/Truck.glb', function (gltf) {
 	var nurbsKnots = [];
 	const nurbsDegree = 3;
     
-    // var R = 10;
-    // var P0 = new THREE.Vector4(R,0,.1,1);
-    // var P1 = new THREE.Vector4(0,R,.1,1);
-    // var P2 = new THREE.Vector4(-R,0,.1,1);
-    // var P3 = new THREE.Vector4(R,0,.1,1);
+    // Assuming you have THREE.js included in your environment
+    function createEquilateralTriangleWithInterleavedMidpoints(sideLength) {
+        // Calculate the height of the triangle
+        const height = Math.sqrt(3) / 2 * sideLength;
+        const halfHeight = height / 2;
 
-    // nurbsControlPoints.push(P0);
-    // nurbsControlPoints.push(P1);
-    // nurbsControlPoints.push(P2);
-    // nurbsControlPoints.push(P3);
+        // Vertices of the triangle, centered such that one midpoint can be at the origin
+        const p1 = new THREE.Vector4(-sideLength / 2, -halfHeight, 0.1, 1);
+        const p2 = new THREE.Vector4(sideLength / 2 , -halfHeight, 0.1, 1);
+        const p3 = new THREE.Vector4(0, height - halfHeight - 35, 0.1, 1);
 
-    // nurbsKnots.push(0);
-    // nurbsKnots.push(0);
-    // nurbsKnots.push(0);
-    // nurbsKnots.push(0);
+        // Calculate midpoints between vertices
+        const midpoint12 = new THREE.Vector4((p1.x + p2.x) / 2, (p1.y + p2.y) / 2, 0.1, 1); // Midpoint between p1 and p2
+        const midpoint23 = new THREE.Vector4((p2.x + p3.x) / 2, (p2.y + p3.y) / 2, 0.1, 1); // Midpoint between p2 and p3
+        const midpoint31 = new THREE.Vector4((p3.x + p1.x) / 2, (p3.y + p1.y) / 2, 0.1, 1); // Midpoint between p3 and p1
 
-    // nurbsKnots.push(1);
-    // nurbsKnots.push(1);
-    // nurbsKnots.push(1);
-    // nurbsKnots.push(1);
+        // Create an array that interleaves vertices with midpoints in a counter-clockwise orientation
+        // Start with midpoint12 to ensure the first and last points are the same (at origin adjustment if needed)
+        var points = [
+            midpoint12, p1, midpoint31, p3, midpoint23, p2, new THREE.Vector4().copy(midpoint12)
+        ];
 
+        return points;
+    }
 
-// Assuming you have THREE.js included in your environment
-function createEquilateralTriangleWithInterleavedMidpoints(sideLength) {
-    // Calculate the height of the triangle
-    const height = Math.sqrt(3) / 2 * sideLength;
-    const halfHeight = height / 2;
+    function addConstantOffsetToVectorList(vectorList, center) {
+        var i = 0;
+        vectorList.forEach(vector => {
+            console.log(i++);
+            vector.x += center.x;
+            vector.y += center.y;
+            vector.z += center.z;
+        });
+    }
 
-    // Vertices of the triangle, centered such that one midpoint can be at the origin
-    const p1 = new THREE.Vector4(-sideLength / 2, -halfHeight, 0.1, 1);
-    const p2 = new THREE.Vector4(sideLength / 2 , -halfHeight, 0.1, 1);
-    const p3 = new THREE.Vector4(0, height - halfHeight - 35, 0.1, 1);
+    var sideLength = 80; // Side length of the equilateral triangle
+    nurbsControlPoints = createEquilateralTriangleWithInterleavedMidpoints(sideLength);
+    addConstantOffsetToVectorList(nurbsControlPoints, new THREE.Vector4(0, 20, 0, 0));
+    nurbsKnots = [0, 0, 0, 0, 0.45, 0.5, 0.65, 1, 1, 1, 1];
 
-    // Calculate midpoints between vertices
-    const midpoint12 = new THREE.Vector4((p1.x + p2.x) / 2, (p1.y + p2.y) / 2, 0.1, 1); // Midpoint between p1 and p2
-    const midpoint23 = new THREE.Vector4((p2.x + p3.x) / 2, (p2.y + p3.y) / 2, 0.1, 1); // Midpoint between p2 and p3
-    const midpoint31 = new THREE.Vector4((p3.x + p1.x) / 2, (p3.y + p1.y) / 2, 0.1, 1); // Midpoint between p3 and p1
+	const nurbsCurve = new NURBSCurve( nurbsDegree, nurbsKnots, nurbsControlPoints );
+	const nurbsGeometry = new THREE.BufferGeometry();
+	nurbsGeometry.setFromPoints( nurbsCurve.getPoints( 100 ) );
+	const nurbsMaterial = new THREE.LineBasicMaterial( { color: 0x000000 } );
+	const nurbsLine = new THREE.Line( nurbsGeometry, nurbsMaterial );
+    scene.add( nurbsLine );
+    
+	const nurbsControlPointsGeometry = new THREE.BufferGeometry();
+	nurbsControlPointsGeometry.setFromPoints( nurbsCurve.controlPoints );
+	const nurbsControlPointsMaterial = new THREE.LineBasicMaterial( { color: 0x333333, opacity: 0.25, transparent: true } );
+	const nurbsControlPointsLine = new THREE.Line( nurbsControlPointsGeometry, nurbsControlPointsMaterial );
+	nurbsControlPointsLine.position.copy( nurbsLine.position );
+	scene.add( nurbsControlPointsLine );
 
-    // Create an array that interleaves vertices with midpoints in a counter-clockwise orientation
-    // Start with midpoint12 to ensure the first and last points are the same (at origin adjustment if needed)
-    var points = [
-        midpoint12, p1, midpoint31, p3, midpoint23, p2, new THREE.Vector4().copy(midpoint12)
-    ];
+//
 
-    return points;
+function curveFirstDerivative(curve, t){
+    const dt = 1e-5; // Small value for approximating the derivative
+    const t1 = Math.max(0, t - dt);
+    const t2 = Math.min(1, t + dt);
+
+    const p1 = curve.getPoint(t1);
+    const p2 = curve.getPoint(t2);
+
+    return p2.clone().sub(p1).multiplyScalar(1 / (t2 - t1))
 }
 
-function addConstantOffsetToVectorList(vectorList, center) {
-    var i = 0;
-    vectorList.forEach(vector => {
-        console.log(i++);
-        vector.x += center.x;
-        vector.y += center.y;
-        vector.z += center.z;
-    });
+function curveSecondDerivative(curve, t){
+    const dt = 1e-5; // Small value for approximating the derivative
+    const t1 = Math.max(0, t - dt);
+    const t2 = Math.min(1, t + dt);
+
+    const dp1 = curveFirstDerivative(curve, t1);
+    const dp2 = curveFirstDerivative(curve, t2);
+
+    return dp2.clone().sub(dp1).multiplyScalar(1 / (t2 - t1));
 }
 
-// Example usage
-var sideLength = 80; // Side length of the equilateral triangle
-nurbsControlPoints = createEquilateralTriangleWithInterleavedMidpoints(sideLength);
-// Deep copy function for a list of THREE.Vector4 objects
-function deepCopyVectorList(vectorList) {
-    return vectorList.map(vector => new THREE.Vector4().copy(vector));
+function curveSignedCurvature(curve, t){
+    const dT_dt = curveFirstDerivative(curve, t);
+    const ddT_dt2 = curveSecondDerivative(curve, t);
+    const curvature = (dT_dt.x * ddT_dt2.y - dT_dt.y * ddT_dt2.x) / Math.pow(dT_dt.length(), 3);
+    return Math.sign(curvature) * Math.abs(curvature);
 }
-
-// Make a deep copy of the original list
-const outpts = deepCopyVectorList(nurbsControlPoints);
-console.log(outpts);
-addConstantOffsetToVectorList(nurbsControlPoints, new THREE.Vector4(0, 10, 0, 0));
-nurbsKnots = [0, 0, 0, 0, 0.45, 0.5, 0.65, 1, 1, 1, 1];
-console.log(nurbsControlPoints);
-
-const nurbsCurve = new NURBSCurve( nurbsDegree, nurbsKnots, nurbsControlPoints );
-
-const nurbsGeometry = new THREE.BufferGeometry();
-nurbsGeometry.setFromPoints( nurbsCurve.getPoints( 100 ) );
-
-const nurbsMaterial = new THREE.LineBasicMaterial( { color: 0x000000 } );
-
-const nurbsLine = new THREE.Line( nurbsGeometry, nurbsMaterial );
-//nurbsLine.position.set( 200, - 100, 0 );
-scene.add( nurbsLine );
-
-const nurbsControlPointsGeometry = new THREE.BufferGeometry();
-nurbsControlPointsGeometry.setFromPoints( nurbsCurve.controlPoints );
-
-const nurbsControlPointsMaterial = new THREE.LineBasicMaterial( { color: 0x333333, opacity: 0.25, transparent: true } );
-
-const nurbsControlPointsLine = new THREE.Line( nurbsControlPointsGeometry, nurbsControlPointsMaterial );
-nurbsControlPointsLine.position.copy( nurbsLine.position );
-scene.add( nurbsControlPointsLine );
 
 function rotateVector(vector, angle) {
     const rotationMatrix = [[Math.cos(angle), -Math.sin(angle)], [Math.sin(angle), Math.cos(angle)]];
@@ -208,7 +201,6 @@ function getZRotation(vector) {
     // Convert the angle from radians to degrees and return it
     return angle;
 }
-
 
 // Simulation constants.
 const deltaT = .1;
@@ -251,20 +243,6 @@ const cP = [
 //     scene.add(sphere);
 // });
 
-// Bezier Curve
-const curve = new THREE.CubicBezierCurve3(
-    cP[0],
-    cP[1],
-    cP[2],
-    cP[3]
-);
-
-const points = curve.getPoints(50);
-const geometry = new THREE.BufferGeometry().setFromPoints(points);
-const lineMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
-const bezierCurve = new THREE.Line(geometry, lineMaterial);
-
-scene.add(bezierCurve);
 
 ///////////////////////////////////////////////////////////////////
 // Main animation loop.
