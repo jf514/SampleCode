@@ -250,7 +250,7 @@ const cP = [
 // These implement constant time steps across different
 // devices, etc..
 const fixedTimeStep = 1/60;
-const velocity = 1/6;
+const velocity = 1/8;
 let accumulator = 0;
 const clock = new THREE.Clock();
 
