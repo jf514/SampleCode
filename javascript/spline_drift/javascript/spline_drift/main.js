@@ -89,7 +89,7 @@ loader.load('./Models/Truck.glb', function (gltf) {
 	var nurbsKnots = [];
 	const nurbsDegree = 3;
     
-    // Assuming you have THREE.js included in your environment
+    // Equilateral triangle
     function createEquilateralTriangleWithInterleavedMidpoints(sideLength) {
         // Calculate the height of the triangle
         const height = Math.sqrt(3) / 2 * sideLength;
