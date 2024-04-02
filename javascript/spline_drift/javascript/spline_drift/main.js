@@ -84,7 +84,6 @@ loader.load('./Models/Truck.glb', function (gltf) {
 // Nurbs Curve Stuff
 
 	// NURBS curve
-
 	var nurbsControlPoints = [];
 	var nurbsKnots = [];
 	const nurbsDegree = 3;
@@ -129,7 +128,9 @@ loader.load('./Models/Truck.glb', function (gltf) {
     addConstantOffsetToVectorList(nurbsControlPoints, new THREE.Vector4(0, 20, 0, 0));
     nurbsKnots = [0, 0, 0, 0, 0.45, 0.5, 0.65, 1, 1, 1, 1];
 
-	const nurbsCurve = new NURBSCurve( nurbsDegree, nurbsKnots, nurbsControlPoints );
+    var nurbsCurve = new NURBSCurve( nurbsDegree, nurbsKnots, nurbsControlPoints );
+    nurbsCurve.arcLengthDivisions = 1000;
+    const nurbsLen = nurbsCurve.getLength();
 	const nurbsGeometry = new THREE.BufferGeometry();
 	nurbsGeometry.setFromPoints( nurbsCurve.getPoints( 100 ) );
 	const nurbsMaterial = new THREE.LineBasicMaterial( { color: 0x000000 } );
@@ -150,8 +151,8 @@ function curveFirstDerivative(curve, t){
     const t1 = Math.max(0, t - dt);
     const t2 = Math.min(1, t + dt);
 
-    const p1 = curve.getPoint(t1);
-    const p2 = curve.getPoint(t2);
+    const p1 = curve.getPointAt(t1);
+    const p2 = curve.getPointAt(t2);
 
     return p2.clone().sub(p1).multiplyScalar(1 / (t2 - t1))
 }
@@ -283,7 +284,7 @@ function animate() {
         
         // Set translation - transform car location
         // so center of front wheels follows the spline.
-        var transCM = nurbsCurve.getPoint(t);
+        var transCM = nurbsCurve.getPointAt(t);
         var transFrontWheel = new THREE.Vector3(Math.cos(deltaTheta), Math.sin(deltaTheta), 0);
         var distToFronWheel = 2;
         transFrontWheel.multiplyScalar(-distToFronWheel);
