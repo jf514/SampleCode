@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Continuous Increment</title>
+</head>
+<body>
+
+<button id="incrementButton">Increment</button>
+<p id="result">Result: 0</p>
+
+<script>
+  // Initialize variables
+  let incrementValue = 1;
+  let result = 0;
+
+  // Function to update the result and display it
+  function updateResult() {
+      document.getElementById('result').textContent = `Result: ${result}`;
+  }
+
+  // Event listener for the button press
+  document.getElementById('incrementButton').addEventListener('mousedown', function() {
+      // Increment the result continuously while the button is pressed
+      const intervalId = setInterval(function() {
+          result += incrementValue;
+          updateResult();
+      }, 100); // Adjust the interval duration as needed
+
+      // Event listener for button release
+      document.addEventListener('mouseup', function() {
+          clearInterval(intervalId); // Stop incrementing when the button is released
+      });
+  });
+</script>
+
+</body>
+</html>
