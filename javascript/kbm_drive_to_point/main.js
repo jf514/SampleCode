@@ -26,8 +26,8 @@ camera.position.set(0, -50, 50);
 camera.lookAt(0, 0, 0);
 
 // DEBUG: Add some coordinate axes. R = X, green = Y, blue = Z.
-//const axesHelper = new THREE.AxesHelper( 5 );
-//scene.add( axesHelper );
+const axesHelper = new THREE.AxesHelper( 5 );
+scene.add( axesHelper );
 
 //Load background texture.
 const txloader = new THREE.TextureLoader();
@@ -148,26 +148,46 @@ removeTrailerButton.addEventListener("click", removeTrailer, false);
 var steeringUI = null
 var firstMouseDown = false;
 var wheelUI = document.getElementById("wheel")
-const updateSteering = (mouseX) => {
-	console.log("Update Steer")
-	if(!firstMouseDown){
-		firstMouseDown = true;
-	}
-	steeringUI = -(1 - (mouseX/window.innerWidth)*2);
-	steerModel = -.5*steeringUI*Math.PI/2;
+//document.addEventListener("pointerdown", )
 
-	wheelUI.style.display = "block";
-	wheelUI.style.transform = `rotate(${steeringUI*90}deg)`;
+//////////////////////////////////////////////////////////////////
+// Click
+
+// Create a plane representing the x-y plane
+const geometry = new THREE.PlaneGeometry(500, 500);
+const material = new THREE.MeshBasicMaterial({ color: 0xffff00, side: THREE.DoubleSide, transparent: true, opacity: 0.0});
+const plane = new THREE.Mesh(geometry, material);
+scene.add(plane);
+
+// Set up raycaster
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+// Add an event listener for mouse clicks
+document.addEventListener('pointerdown', onClick);
+
+// Function to handle mouse clicks
+function onClick(event) {
+    // Calculate mouse position in normalized device coordinates
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    // Set the raycaster
+    raycaster.setFromCamera(mouse, camera);
+
+    // Intersect the ray with the x-y plane
+    const intersects = raycaster.intersectObject(plane);
+
+    if (intersects.length > 0) {
+        // Get the intersection point
+        const intersectionPoint = intersects[0].point;
+
+        //console.log("Intersection Point:", intersectionPoint);
+		trailerChain.at(0).x = intersectionPoint.x;
+		trailerChain.at(0).y = intersectionPoint.y;
+    }
 }
-document.addEventListener("pointerdown",(e)=>updateSteering(e.clientX))
-document.addEventListener("pointermove",(e)=>{
-	if(steeringUI != null) updateSteering(e.clientX)
-})
-document.addEventListener("pointerup",()=>{
-	console.log("Pointer up")
-	steeringUI = null;
-	wheelUI.style.display = "none";
-})
+
 
 ///////////////////////////////////////////////////////////////////
 // Add and remove trailer. We use turnDir to alternate initial trailer
@@ -215,11 +235,13 @@ class BicycleModel {
 
 		// Geometric factors 
 		this.beta = Math.atan(this.lr * Math.tan(this.steer)/(this.lf+this.lr))
-		this.omega = (this.v/(this.lf + this.lr))*Math.tan(steer)*Math.cos(this.beta);  
+		this.omega = (this.v/(this.lf + this.lr))*Math.tan(steer)*Math.cos(this.beta);
+		console.log("omega = " + this.omega);
 		
 		this.x = this.x + this.v*(deltaT)*Math.cos(this.theta + this.beta);
 		this.y = this.y + this.v*(deltaT)*Math.sin(this.theta + this.beta);
 		this.theta = this.theta + (deltaT)*this.omega;
+		console.log("theta = " + this.theta);
 
 		this.hitchPos = this.getHitchPos();
 		this.hitchVel = this.getHitchVel(deltaT);
@@ -254,6 +276,10 @@ class BicycleModel {
 		pos.set(this.x, this.y, 0);
 
 		return pos;
+	}
+
+	getTheta(){
+		return this.theta;
 	}
 }
 
@@ -327,20 +353,60 @@ class Trailer{
 	getPos(){
 		return this.center;
 	}
+
+	getTheta(){
+		return this.theta;
+	}
 }
 
 ///////////////////////////////////////////////////////////////////
 // Set up dynamic simulation
 const trailer2 = new Trailer(3, 2, 5, Math.PI/2);
 const trailer = new Trailer(3, 2, 5, Math.PI/2);
-const bike = new BicycleModel(1.5, 10.5, 0, Math.PI/2, 0, 1.0, 2.0, 1.3, 2.9);
+const bike = new BicycleModel(0, -40, 0, 0*Math.PI/2, 0, 0.0, 2.0, 1.3, 2.9);
 var trailerChain = [bike, trailer, trailer2]; 
 
+function clamp(value, max_val) {
+    return Math.min(Math.max(value, -max_val), max_val);
+}
+
+function clampCircle(radians) {
+    radians = radians % (2 * Math.PI); // Bring the angle within 0 to 2π range
+    if (radians > Math.PI) {
+        radians -= 2 * Math.PI; // Map to -π to π range
+    }
+    return radians;
+}
+
+function angleDiff(theta0, theta1){
+	var diff = theta0 - theta1;
+	if(diff > Math.PI){
+		return diff - 2*Math.PI;
+	} else if(diff < -Math.PI){
+		return diff + 2*Math.PI;
+	}
+	return diff;
+}
 
 // Update the dynamic models together.
 function updateDynamics(deltaT, steer){
 	// Update bicycle model.
-	trailerChain.at(0).update(deltaT, steer);
+
+	const pos = trailerChain.at(0).getPos();
+
+	trailerChain.at(0).v = 0;
+	if(pos.length() > 1.) {
+		const k_v = .25;
+		trailerChain.at(0).v = k_v * Math.sqrt(pos.length());
+		var thetaGoal = Math.atan2(pos.y, pos.x);
+		var theta = trailerChain.at(0).getTheta();
+		theta = clampCircle(theta);
+		const k_s = .1;
+		steer = -1*k_s * angleDiff(thetaGoal, theta);
+		console.log("steer = " + steer);
+		steer = clamp(steer, Math.PI/4);
+		trailerChain.at(0).update(deltaT, steer);
+	} 
 
 	// Update children (trailers). (Must happen in order of
 	// parent then child.)
@@ -377,23 +443,15 @@ function animate() {
 	accumulator += deltaTime;
 
 	// Accumlator only steps when sufficient time has passed.
-	while(accumulator >= fixedTimeStep){
+//	while(accumulator >= fixedTimeStep){
 		updateDynamics(deltaT, steerModel);
 		updateGraphics();
 
 		t += deltaT;
-		accumulator -= fixedTimeStep;
-	}
+//		accumulator -= fixedTimeStep;
+//	}
 
 	renderer.render( scene, camera );
-
-	// Handle steering return to 0 after
-	// steering UI event.
-	if(firstMouseDown)
-	{
-		var deltaS = 0.01
-		steerModel -= Math.sign(steerModel)*deltaS;
-	}
 
 	wheelUI.style.display = "block";
 	wheelUI.style.transform = `rotate(${-steerModel}rad)`;
