@@ -137,15 +137,6 @@ checkbox3.addEventListener('change', function() {
 });
 
 
-class Model {
-	constructor(smallColor, bigColor) {
-		this.smallColor = smallColor;
-		this.bigColor = bigColor;
-
-	} 
-}
-
-
 ///////////////////////////////////////////////////////////////////
 // Model
 
@@ -329,6 +320,79 @@ class State {
 		this.v2.copy(s.v2);
 	}
 }
+
+
+class Model {
+	constructor(smallColor, bigColor) {
+		this.smallColor = smallColor;
+		this.bigColor = bigColor;
+		this.p1 = new THREE.Vector3(0,R*Math.sin(theta),R*Math.cos(theta));
+		this.p2 = (new THREE.Vector3(1,0,0)).cross(p1);
+		this.v1 = omega.clone().cross(p1);
+		this.v2 = omega.clone().cross(p2);
+	} 
+
+	init() {
+		// Create sphere geometry
+		const rSmSph = .1
+		const smallSphGeo = new THREE.SphereGeometry(rSmSph, 32, 32);
+		const smallSphMat = new THREE.MeshPhongMaterial({ color: 0x00ff00, specular: 0x222222, shininess: 100 });
+		const mSa = new THREE.Mesh(smallSphGeo, smallSphMat);
+		scene.add(mSa);
+		const mSb = new THREE.Mesh(smallSphGeo, smallSphMat);
+		scene.add(mSb);
+
+		// Create cylinder geometry
+		var smallCylGeo = new THREE.CylinderGeometry(.04, .04, 2, 32)
+		const mSCyl = new THREE.Mesh(smallCylGeo, smallSphMat);
+		scene.add(mSCyl);
+		mSCyl.position.set(0,0,0);
+
+		const bigSphGeo = new THREE.SphereGeometry(2*rSmSph, 32, 32);
+		const bigSphMat = new THREE.MeshPhongMaterial({ color: 0xff1100, specular: 0x222222, shininess: 100 })
+		const mBa = new THREE.Mesh(bigSphGeo, bigSphMat);
+		scene.add(mBa);
+		const mBb = new THREE.Mesh(bigSphGeo, bigSphMat);
+		scene.add(mBb)
+
+		var bigCylGeo = new THREE.CylinderGeometry(.04, .04, 2, 32)
+		const bigCyl = new THREE.Mesh(bigCylGeo, bigSphMat);
+		scene.add(bigCyl);
+		bigCyl.position.set(0,0,0);
+
+		const R = 1
+		mSa.position.set(R,0,0)
+		mSb.position.set(-R,0,0)
+
+		mBa.position.set(0,R,0)
+		mBb.position.set(0,-R,0)
+	}
+
+	updateEuler(deltaT) {
+		p1.addScaledVector(v1,deltaT);
+		v1.addScaledVector(dvdt1(p1, v1, p2, v2), deltaT);
+		p2.addScaledVector(v2, deltaT);
+		v2.addScaledVector(dvdt2(p1, v1, p2, v2), deltaT);
+
+		return this.clone();
+		
+	}
+
+	updateGraphics() {
+		mSa.position.copy(p1)
+		mSb.position.copy(p1.clone().multiplyScalar(-1))
+		setRotation(mSCyl, p1);
+	
+		mBa.position.copy(p2)
+		mBb.position.copy(p2.clone().multiplyScalar(-1))
+		setRotation(bigCyl, p2);
+	}
+
+	
+}
+
+const euler = new Model(0xFF0000, 0x00FF00);
+euler.updateEuler();
 
 function setRotation(mesh, point){
 	var azimuth = Math.atan2(-point.x, point.y);
