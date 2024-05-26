@@ -1,0 +1,50 @@
+body {
+    /* overflow: hidden; */
+    margin: 0;
+    touch-action: manipulation;
+    font-size: 22px;
+    min-width: 400px;
+  }
+  
+  /* Style for checkbox container */
+  .checkbox-container {
+    position: absolute;
+    display: flex; /* Make it inline so it takes up only the necessary width */
+    width: 100%; /* Set a fixed width for the checkbox container */
+    height: 32px;
+    justify-content: space-around;
+    align-items: center;
+    background-color: #7f7f7fa1;
+    border-bottom: 1px solid #ccc;
+    font-family: "Roboto", sans-serif;
+    z-index: 1000;
+  }
+  
+  /* Style for checkbox input */
+  .checkbox-container input[type="checkbox"] {
+    transform: scale(2);
+    margin-right: 5px; /* Add some margin to separate checkbox and label */
+  }
+  
+  /* Style for label */
+  .checkbox-container label {
+    vertical-align: middle; /* Align label vertically in the middle */
+  }
+  
+  canvas {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    z-index: 0;
+  }
+  
+  @media only screen and (max-width: 600px) {
+    body {
+      font-size: 16px;
+    }
+    .checkbox-container input[type="checkbox"] {
+      transform: scale(1.5);
+      margin-right: 3px; /* Add some margin to separate checkbox and label */
+    }
+  }
+  
