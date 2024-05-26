@@ -105,13 +105,13 @@ const checkbox1 = document.getElementById('checkbox1');
 const checkbox2 = document.getElementById('checkbox2');
 const checkbox3 = document.getElementById('checkbox3');
 
-var showEuler = true;
+var showEuler = false;
 checkbox1.checked = showEuler;
 
-var showMP = true;
+var showMP = false;
 checkbox2.checked = showMP;
 
-var showRK = true;
+var showRK = false;
 checkbox3.checked = showRK;
 
 // Add event listeners to the checkboxes
@@ -175,11 +175,11 @@ var m1 = 1
 var m2 = 9.09
 
 // Initial ang. vel.
-var omega = new THREE.Vector3(0,0,1);
+var omega = new THREE.Vector3(0,0,0);
 
 // Positions & vels
 
-var theta = .3 * Math.PI/180
+var theta = 90 * Math.PI/180
 var p1 = new THREE.Vector3(0,R*Math.sin(theta),R*Math.cos(theta));
 var p2 = (new THREE.Vector3(1,0,0)).cross(p1);
 var v1 = omega.clone().cross(p1);
@@ -239,7 +239,7 @@ class State {
 		this.p1 = p1.clone();
 		this.v1 = v1.clone();
 		this.p2 = p2.clone();
-		this.v2 = v2.clone(); 
+		this.v2 = v2.clone();
 	}
 
 	derivs() {
@@ -384,6 +384,20 @@ class Model {
 		this.v2 = s.v2;
 	}
 
+	updateDynamicsPBD() {
+		// Update velocity
+		this.v1.addScaledVector(new THREE.Vector3(0,0,-1), dT)
+		var p1 = this.p1.clone();
+		p1.addScaledVector(this.v1, dT);
+		var s = p1.length() - R;
+		var deltaP1 = p1.clone().normalize();
+		deltaP1.multiplyScalar(-s);
+		p1.add(deltaP1);
+		this.v1.subVectors(p1, this.p1);
+		this.v1.multiplyScalar(1/dT);
+		this.p1 = p1.clone();
+	}
+
 	updateGraphics() {
 		this.mSa.position.copy(this.p1)
 		this.mSb.position.copy(this.p1.clone().multiplyScalar(-1))
@@ -466,6 +480,7 @@ const clock = new THREE.Clock();
 var eulerModel = new Model(0xFF00AA, 0xFF00AA);
 var mpModel = new Model(0xFF0000, 0x00FF00);
 var rkModel = new Model(0xFF0000, 0x00FF00);
+var pbdModel = new Model(0xFFBB22, 0x33FF33);
 
 
 // The main workhorse.
@@ -483,6 +498,9 @@ function animate() {
 	rkModel.updateDynamicsRK();
 	rkModel.updateGraphics();
 	rkModel.setVisible(showRK);
+
+	pbdModel.updateDynamicsPBD();
+	pbdModel.updateGraphics();
 
 	t += dT;
 	renderer.render( scene, camera );
