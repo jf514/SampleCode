@@ -1,0 +1,2 @@
+The contents of this directory represent a model dynamical simulation of a pen thrown in the air. This was
+developed by Jason Foat as a demonstration for the Aurora Motion Sim team. See comments in files for use.

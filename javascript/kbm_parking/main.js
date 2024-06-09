@@ -48,6 +48,7 @@ loader.load('./Models/ParkingLot_02.glb', function (gltf) {
     const model = gltf.scene;
     model.position.set(0, 0, 0);
     model.rotation.x = Math.PI/2;
+	model.rotation.y = Math.PI/2;
     const sc = 0.01;
     model.scale.set(sc, sc, sc);
 	models[0] = model;
@@ -97,8 +98,8 @@ function LoadTrailer(i){
 }
 
 // Start with two trailers.
-LoadTrailer(0);
-LoadTrailer(1);
+//LoadTrailer(0);
+//LoadTrailer(1);
 
 ///////////////////////////////////////////////////////////////////
 // DEBUG: Grid helper... useful for debugging velocity/scale issues.
@@ -167,6 +168,7 @@ const mouse = new THREE.Vector2();
 document.addEventListener('pointerdown', onClick);
 
 // Function to handle mouse clicks
+var target = new THREE.Vector3();
 function onClick(event) {
     // Calculate mouse position in normalized device coordinates
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -183,8 +185,9 @@ function onClick(event) {
         const intersectionPoint = intersects[0].point;
 
         //console.log("Intersection Point:", intersectionPoint);
-		trailerChain.at(0).x = intersectionPoint.x;
-		trailerChain.at(0).y = intersectionPoint.y;
+		//trailerChain.at(0).x = intersectionPoint.x;
+		//trailerChain.at(0).y = intersectionPoint.y;
+		target = intersectionPoint;
     }
 }
 
@@ -236,12 +239,12 @@ class BicycleModel {
 		// Geometric factors 
 		this.beta = Math.atan(this.lr * Math.tan(this.steer)/(this.lf+this.lr))
 		this.omega = (this.v/(this.lf + this.lr))*Math.tan(steer)*Math.cos(this.beta);
-		console.log("omega = " + this.omega);
+		//console.log("omega = " + this.omega);
 		
 		this.x = this.x + this.v*(deltaT)*Math.cos(this.theta + this.beta);
 		this.y = this.y + this.v*(deltaT)*Math.sin(this.theta + this.beta);
 		this.theta = this.theta + (deltaT)*this.omega;
-		console.log("theta = " + this.theta);
+		//console.log("theta = " + this.theta);
 
 		this.hitchPos = this.getHitchPos();
 		this.hitchVel = this.getHitchVel(deltaT);
@@ -363,8 +366,9 @@ class Trailer{
 // Set up dynamic simulation
 const trailer2 = new Trailer(3, 2, 5, Math.PI/2);
 const trailer = new Trailer(3, 2, 5, Math.PI/2);
-const bike = new BicycleModel(0, -40, 0, 0*Math.PI/2, 0, 0.0, 2.0, 1.3, 2.9);
-var trailerChain = [bike, trailer, trailer2]; 
+const bike = new BicycleModel(0, -10, 0, 0*Math.PI/2, 0, 0.0, 2.0, 1.3, 2.9);
+//var trailerChain = [bike, trailer, trailer2]; 
+var trailerChain =[bike];
 
 function clamp(value, max_val) {
     return Math.min(Math.max(value, -max_val), max_val);
@@ -392,29 +396,36 @@ function angleDiff(theta0, theta1){
 function updateDynamics(deltaT, steer){
 	// Update bicycle model.
 
-	const pos = trailerChain.at(0).getPos();
+	//var pos = trailerChain.at(0).getPos();
 
 	trailerChain.at(0).v = 0;
-	if(pos.length() > 1.) {
-		const k_v = .25;
-		trailerChain.at(0).v = k_v * Math.sqrt(pos.length());
-		var thetaGoal = Math.atan2(pos.y, pos.x);
+	var delta = target.clone().sub(trailerChain.at(0).getPos());
+	if(delta.length() > .05) {
+		const k_v = .15;
+		const v = k_v * Math.sqrt(delta.length());
+		trailerChain.at(0).v = v;
+
 		var theta = trailerChain.at(0).getTheta();
 		theta = clampCircle(theta);
-		const k_s = .1;
-		steer = -1*k_s * angleDiff(thetaGoal, theta);
-		console.log("steer = " + steer);
+		var alpha = Math.atan2(delta.y, delta.x);
+		var beta = -theta-alpha + Math.PI/2; 
+		var k_a = .5;
+		var k_b = .2;
+		var omega_s = k_a*alpha + k_b*beta;
+		var steer = Math.atan2(3.3*omega_s, v);
+
+		//console.log("steer = " + steer);
 		steer = clamp(steer, Math.PI/4);
 		trailerChain.at(0).update(deltaT, steer);
-	} 
 
-	// Update children (trailers). (Must happen in order of
-	// parent then child.)
-	for(let i = 1; i < trailerChain.length; ++i){
+		// Update children (trailers). (Must happen in order of
+		// parent then child.)
+		for(let i = 1; i < trailerChain.length; ++i){
 			trailerChain.at(i).update(deltaT, 
 				trailerChain.at(i-1).hitchPos, 
 				trailerChain.at(i-1).hitchVel);
-	}
+		}
+	} 
 }
 
 // Update visual models from dynamic models above

@@ -1,113 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>Chekov Effect</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body { 
-            overflow: hidden; 
-            margin: 0;
-            touch-action: manipulation;
-        }
-
-        .ui {
-            position: absolute;
-        }
-
-        .button-container {
-            display: flex;
-            justify-content: space-between;
-            position: absolute;
-            width: 100%;
-        }
-
-        .button {
-            border: none;
-            color: white;
-            padding: 30px 32px;
-            height: 110px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 32px;
-            margin: 4px 2px;
-            cursor: pointer;
-        }
-
-        /* Style for checkbox container */
-        .checkbox-container {
-            display: flex; /* Make it inline so it takes up only the necessary width */
-            width: 100%; /* Set a fixed width for the checkbox container */
-            height: 2vh;
-            justify-content: space-around;
-            align-items: center;
-            background-color: #040000a1;
-            border-bottom: 1px solid #ccc;
-            zoom: 4;
-            font-family: 'Roboto', sans-serif;
-        }
-
-        /* Style for checkbox input */
-        .checkbox-container input[type="checkbox"] {
-            margin-right: 5px; /* Add some margin to separate checkbox and label */
-        }
-
-        /* Style for label */
-        .checkbox-container label {
-            vertical-align: middle; /* Align label vertically in the middle */
-            font-size: 15px
-        }
-
-        /* Style for custom checkbox */
-        .checkbox-custom {
-            width: 30px; /* Set the width of the custom checkbox */
-            height: 10px; /* Set the height of the custom checkbox */
-            margin-right: 10px; /* Add margin to separate checkbox and label */
-            border: 2px solid #555; /* Add border for the checkbox */
-            border-radius: 5px; /* Add border radius to round the corners */
-            cursor: pointer; /* Change cursor to pointer on hover */
-        }
-
-        /* Style for checked custom checkbox */
-        .checkbox-custom:checked {
-            background-color: #555; /* Change background color when checked */
-        }
-
-        /* Hide default checkbox */
-        .checkbox-custom input[type="checkbox"] {
-            transform: scale(5);
-            display: none;
-        }
-
-    </style>
-    <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+  <head>
+    <meta charset="utf-8" />
+    <title>Dzhanibekov Effect</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="/styles.css" rel="stylesheet" />
+    <script
+      async
+      src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"
+    ></script>
 
     <script type="importmap">
-    {
+      {
         "imports": {
-            "three": "https://unpkg.com/three@0.151.3/build/three.module.js",
-            "three/addons/": "https://unpkg.com/three@0.151.3/examples/jsm/"
+          "three": "https://unpkg.com/three@0.151.3/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.151.3/examples/jsm/"
         }
-    }
+      }
     </script>
-</head>
-<body>
+  </head>
+  <body>
     <div class="checkbox-container">
-        <label>
-            <input type="checkbox" id="checkbox1">
-            Euler
-        </label>
-        <label>
-            <input type="checkbox" id="checkbox2">
-            Midpoint
-        </label>
-        <label>
-            <input type="checkbox" id="checkbox3">
-            4th Runge-Kutta 
-        </label>
+      <label>
+        <input type="checkbox" id="checkbox1" />
+        Euler
+      </label>
+      <label>
+        <input type="checkbox" id="checkbox2" />
+        Midpoint
+      </label>
+      <label>
+        <input type="checkbox" id="checkbox3" />
+        4th Runge-Kutta
+      </label>
     </div>
     <script type="module" src="/main.js"></script>
-</body>
+  </body>
 </html>
-
