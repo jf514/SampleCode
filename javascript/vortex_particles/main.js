@@ -244,10 +244,10 @@ function logInstanceDetails(instancedMesh, i) {
 }
 class VortexParticles {
 	constructor(){
-		//this.yNum = 1;
-		//this.xNum = 2000;
-		this.xNum = 40;
-		this.yNum = 40;
+		this.yNum = 1;
+		this.xNum = 2000;
+		//this.xNum = 40;
+		//this.yNum = 40;
 		this.vertsLength = 3*this.yNum*this.xNum;
 		this.verts = new Float32Array(this.vertsLength);
 		this.blueIdxs = [];
@@ -255,17 +255,17 @@ class VortexParticles {
 		this.yellowColor = new THREE.Color(1,1,0);
 		this.yellowIdxs = [];
 
-		var dx = .1;
+		var dx = .01;
 		for(let y = 0; y < this.yNum; ++y){
 			for(let x = 0; x < this.xNum; ++x){
 				var idx = x + this.xNum * y;
 				var xCoord = dx*(x - 0.5*this.xNum);
-				var yCoord = dx*(y-0.5*this.yNum); // + 0.1*Math.sin(6.28 * (x)/100);
+				var yCoord = dx*(y-0.5*this.yNum) + 0.1*Math.sin(6.28 * (x)/150);
 				this.verts[3*idx] = xCoord;
 				this.verts[3*idx + 1] = yCoord;
 				
 				var K = 0.1; //spiral vorts
-				//this.verts[3*idx + 2] = K;
+				this.verts[3*idx + 2] = K;
 
 				// var rad = new THREE.Vector2(xCoord,yCoord);
 				// if(rad.length() < this.yNum*dx*.15){
@@ -283,15 +283,15 @@ class VortexParticles {
 				// }
 				
 
-				if((Math.abs(xCoord) < .7*(dx*this.xNum/2) && Math.abs(yCoord) < .5*(dx*this.yNum/2))){
-					this.verts[3*idx + 2] = -K;
-					this.blueIdxs.push(idx);
-					//this.yellowIdxs.push(idx);
-				} else {
-					this.verts[3*idx + 2] = K;
-					this.yellowIdxs.push(idx);
-					//this.blueIdxs.push(idx);
-				}
+				// if((Math.abs(xCoord) < .7*(dx*this.xNum/2) && Math.abs(yCoord) < .5*(dx*this.yNum/2))){
+				// 	this.verts[3*idx + 2] = -K;
+				// 	this.blueIdxs.push(idx);
+				// 	//this.yellowIdxs.push(idx);
+				// } else {
+				// 	this.verts[3*idx + 2] = K;
+				// 	this.yellowIdxs.push(idx);
+				// 	//this.blueIdxs.push(idx);
+				// }
 
 
 
@@ -309,7 +309,7 @@ class VortexParticles {
 				// }
 
 				//this.blueIdxs.push(idx);
-				//this.yellowIdxs.push(idx);
+				this.yellowIdxs.push(idx);
 			}
 		}
 
