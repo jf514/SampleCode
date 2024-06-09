@@ -52,7 +52,7 @@ const txloader = new THREE.TextureLoader();
 
 // Simulation constants.
 //const dT = 1/60;
-const dT = 1/600;
+const dT = .1/60;
 const dTH = .5 * dT;
 var steerModel = Math.PI/6.;  
 var t = 0.0;
@@ -133,33 +133,6 @@ window.onresize = function () {
 	const sqGeo = new THREE.PlaneGeometry(R, R); // 2x2 size plane
 	// // Create the material with a solid blue color
 	const sqMat = new THREE.MeshBasicMaterial({ color: 0x0000ff});
-
-
-	// // Vertex shader
-	// const vertexShader = `
-	// attribute vec3 instanceColor;
-	// varying vec3 vColor;
-	// void main() {
-	// 	vColor = instanceColor;
-	// 	vec4 mvPosition = modelViewMatrix * instanceMatrix * vec4(position, 1.0);
-	// 	gl_Position = projectionMatrix * mvPosition;
-	// }
-	// `;
-
-	// // Fragment shader
-	// const fragmentShader = `
-	// varying vec3 vColor;
-	// void main() {
-	// 	gl_FragColor = vec4(vColor, 1.0);
-	// }
-	// `;
-
-	// // Create the shader material
-	// const shMat = new THREE.ShaderMaterial({
-	// 	vertexShader,
-	// 	fragmentShader,
-	// 	uniforms: {}
-	// });
   
 	// Create the mesh
 	//const square = new THREE.Mesh(sqGeo, material);
@@ -241,93 +214,6 @@ function forceOnV0(currState, v0){
 }
 
 
-class StateSp {
-	constructor() {
-		this.verts = [];
-	}
-
-	addVert(vertex){
-		this.verts.push(vertex);
-	}
-
-	derivs(){
-		var s = new StateSp(this.forces);
-
-		for(let i = 0; i < this.verts.length; ++i){
-			var oldV = this.verts[i];
-			
-			var newV = new VertexInfo();
-			if(oldV.isFixed){
-				// Velocity 
-				newV.x = new THREE.Vector3(0,0,0);
-				newV.v = new THREE.Vector3(0,0,0);
-			} else {
-				newV.x = oldV.v.clone();
-				var forceV0 = forceOnV0(this, i);
-				newV.x = forceV0.clone();
-				newV.v = new THREE.Vector3()
-			}
-			s.addVert(newV)
-		}
-
-		return s;
-	}
-
-	add(state, scalar){
-		for(let i = 0; i < this.verts.length; ++i){
-			this.verts[i].x.addScaledVector(state.verts[i].x, scalar);
-			this.verts[i].v.addScaledVector(state.verts[i].v, scalar);
-		}
-	}
-
-
-	clone(){
-		var s = new StateSp(); 
-		for(let i = 0; i < this.verts.length; ++i){
-			s.addVert(this.verts[i].clone())
-		}
-
-		return s;
-	}
-}
-
-
-class Model {
-	constructor(){
-		//this.lu = new LookUp();
-		this.currState = new StateSp();
-	}
-
-	update() {
-		this.currState = stepSp(this.currState, this.currState.derivs(), dT).clone();
-	}
-
-	// Midpoint
-	updateMP() {
-		var s = this.currState.clone();
-		var k1 = stepSp(s, s.derivs(), 0.5*dT);
-		//var diff = mp.p1.clone().sub(s.p1);
-		//console.log("updateMP mp diff: ", diff);
-		var snew = stepSp(s, k1.clone().derivs(), 0.5*dT);
-		this.currState = snew;
-	}
-
-	// RK4
-	updateRK(deltaT) {
-		var s0 = this.currState.clone()
-		var k1 = s0.derivs();
-		var k2 = stepSp(s0, k1.clone(), 0.5*dT).derivs();
-		var k3 = stepSp(s0, k2.clone(), 0.5*dT).derivs();
-		var k4 = stepSp(s0, k3.clone(), dT).derivs();
-
-		s0.add(k1, dT/6);
-		s0.add(k2, dT/3);
-		s0.add(k3, dT/3);
-		s0.add(k4, dT/6);
-
-		this.currState = s0;
-	}
-}
 
 function updateInstancePosition(instancedMesh, index, position) {
 	const matrix = new THREE.Matrix4().makeTranslation(position.x, position.y, position.z);
@@ -342,89 +228,6 @@ function updateInstancePosition(instancedMesh, index, position) {
 	instancedMesh.instanceMatrix.needsUpdate = true;
 	instancedMesh.instanceColor.needsUpdate = true;
   }
-
-// class ModelCloth extends Model {
-// 	constructor(){
-// 		super();
-
-// 		// Vertex shader
-// 		const vertexShader = `
-// 		attribute vec3 instanceColor;
-// 		varying vec3 vColor;
-// 		void main() {
-// 			vColor = instanceColor;
-// 			vec4 mvPosition = modelViewMatrix * instanceMatrix * vec4(position, 1.0);
-// 			gl_Position = projectionMatrix * mvPosition;
-// 		}
-// 		`;
-
-// 		// Fragment shader
-// 		const fragmentShader = `
-// 		varying vec3 vColor;
-// 		void main() {
-// 			gl_FragColor = vec4(vColor, 1.0);
-// 		}
-// 		`;
-
-// 		// Create the shader material
-// 		// const shMat = new THREE.ShaderMaterial({
-// 		// 	vertexShader,
-// 		// 	fragmentShader,
-// 		// 	uniforms: {}
-// 		// });
-	
-// 		var shMat = new THREE.MeshBasicMaterial({/*color: 0xff0000,*/ vertexColors: true})
-// 		// Set up verts
-// 		var width = 50;
-// 		var depth = 50;
-// 		var dx = .1;
-
-// 		// Create an InstancedMesh
-// 		this.instancedMesh = new THREE.InstancedMesh(sqGeo, shMat, width * depth);
-
-// 		//// Create the mesh
-// 		//const square = new THREE.Mesh(geometry, material);
-
-
-// 		for (let x = 0; x < width; ++x){
-// 			for (let y = 0; y < depth; ++y){
-// 				var pos = new THREE.Vector3((x - 0.5*width)*dx,y*dx,0);
-// 				var vtx = new VertexInfo(pos.clone());
-// 				//console.log("vtx: ", vtx.x);
-
-// 				console.log("vtx: ", vtx.x);
-// 				console.log("center: ", new THREE.Vector3(.25*width*dx,0.5*width,0))
-// 				console.log("distSq: ", vtx.x.distanceToSquared(new THREE.Vector3(.75,0.5*width*dx,0)));
-		
-// 				updateInstancePosition(this.instancedMesh, x+width*y, pos.clone());
-// 				if(vtx.x.distanceToSquared(new THREE.Vector3(.25*width*dx,0.5*width*dx,0)) < 0.6){
-// 					vtx.m *= -1;
-// 					//vtx.addMesh(0xfffff00);
-// 					this.instancedMesh.setColorAt(x + width * y, new THREE.Color(1,1,0));
-// 				} else if (vtx.x.distanceToSquared(new THREE.Vector3(-.75,0.5*width*dx,0)) < 0.6){
-// 					vtx.m *= -1;
-// 					//vtx.addMesh(0xffff00);
-// 					this.instancedMesh.setColorAt(x + width * y, new THREE.Color(1,1,0));
-// 				} else {
-// 					//vtx.addMesh();
-// 					this.instancedMesh.setColorAt(x + width * y, new THREE.Color(1,0,0));
-// 				}
-
-// 				this.currState.addVert(vtx);
-// 			}
-// 		}
-// 		this.instancedMesh.instanceColor.needsUpdate = true;
-// 		scene.add(this.instancedMesh);
-
-// 	}
-
-// 	updateMesh(){
-// 		for(let i = 0; i < this.currState.verts.length; ++i){
-// 			updateInstancePosition(this.instancedMesh, i, this.currState.verts[i].x.clone());
-// 		}
-
-// 	}
-// }
 
 function logInstanceDetails(instancedMesh, i) {
 	const dummy = new THREE.Object3D();
@@ -441,43 +244,69 @@ function logInstanceDetails(instancedMesh, i) {
 }
 class VortexParticles {
 	constructor(){
-		this.width = 60;
-		this.depth = 60;
-		this.verts = new Float32Array(3*this.depth * this.width);
+		//this.yNum = 1;
+		//this.xNum = 2000;
+		this.xNum = 40;
+		this.yNum = 40;
+		this.vertsLength = 3*this.yNum*this.xNum;
+		this.verts = new Float32Array(this.vertsLength);
 		this.blueIdxs = [];
 		this.blueColor = new THREE.Color(0,0,1);
 		this.yellowColor = new THREE.Color(1,1,0);
 		this.yellowIdxs = [];
 
 		var dx = .1;
-		for(let y = 0; y < this.width; ++y){
-			for(let x = 0; x < this.depth; ++x){
-				var idx = x + this.width * y;
-				var xCoord = dx*(x - 0.5*this.width);
-				var yCoord = dx*(y-0.5*this.depth);
+		for(let y = 0; y < this.yNum; ++y){
+			for(let x = 0; x < this.xNum; ++x){
+				var idx = x + this.xNum * y;
+				var xCoord = dx*(x - 0.5*this.xNum);
+				var yCoord = dx*(y-0.5*this.yNum); // + 0.1*Math.sin(6.28 * (x)/100);
 				this.verts[3*idx] = xCoord;
 				this.verts[3*idx + 1] = yCoord;
+				
+				var K = 0.1; //spiral vorts
+				//this.verts[3*idx + 2] = K;
 
 				// var rad = new THREE.Vector2(xCoord,yCoord);
-				// if(rad.length() < this.width*dx*.15){
+				// if(rad.length() < this.yNum*dx*.15){
 				// 	this.verts[3*idx + 2] = -1.0;
 				// } else {
 				// 	this.verts[3*idx + 2] = 1.0;
 				// }
-				
-				if(idx == 3555){
-					var dummy = 0;
-				}
 
-				if((Math.abs(xCoord) < .7 && Math.abs(yCoord) < .5)){
-					this.verts[3*idx + 2] = -1.0;
+				// if(xCoord > 0){
+				// 	this.verts[3*idx + 2] = 1;
+				// 	this.yellowIdxs.push(idx);
+				// } else {
+				// 	this.verts[3*idx + 2] = 1;
+				// 	this.blueIdxs.push(idx);
+				// }
+				
+
+				if((Math.abs(xCoord) < .7*(dx*this.xNum/2) && Math.abs(yCoord) < .5*(dx*this.yNum/2))){
+					this.verts[3*idx + 2] = -K;
 					this.blueIdxs.push(idx);
 					//this.yellowIdxs.push(idx);
 				} else {
-					this.verts[3*idx + 2] = 1.0;
+					this.verts[3*idx + 2] = K;
 					this.yellowIdxs.push(idx);
 					//this.blueIdxs.push(idx);
 				}
+
+
+
+				var Rad = .5;
+				var delta = 0.;
+				var distPlus = new THREE.Vector2(xCoord - (Rad - delta), yCoord);
+				var distMinus = new THREE.Vector2(xCoord + (Rad - delta), yCoord);
+
+				// if(distPlus.lengthSq() < Rad*Rad || distMinus.lengthSq() < Rad*Rad){
+				// 	this.verts[3*idx + 2] = -1.0;
+				// 	this.yellowIdxs.push(idx);
+				// } else {
+				// 	this.verts[3*idx + 2] = 1.0;
+				// 	this.blueIdxs.push(idx);
+				// }
 
 				//this.blueIdxs.push(idx);
 				//this.yellowIdxs.push(idx);
@@ -515,11 +344,90 @@ class VortexParticles {
 		}
 	}
 
+	derivs(verts){
+		var derivs = new Float32Array(this.vertsLength);
+		for(let p =  0; p < this.yNum * this.xNum; ++p){
+			//var force = new THREE.Vector2(0,0);
+			var delta = 0;
+			derivs[3*p] = 0;
+			derivs[3*p + 1] = 0;
+			for (let q = 0; q < this.yNum * this.xNum; ++q){
+				if (p == q)
+					continue;
+				
+				var delta = new THREE.Vector2(verts[3*p], verts[3*p+1]);
+				// Rotate 90
+				delta.setX(delta.x - verts[3*q]);
+				delta.setY(delta.y - verts[3*q+1]);
+
+				var temp = delta.x;
+				delta.setX(-delta.y);
+				delta.setY(temp);
+				var len = delta.lengthSq()
+				var K = 1.;
+				delta.multiplyScalar(K * this.verts[3*q +2]/len);
+				//console.log("force: ", force);
+				//console.log("p: ", p);
+				//console.log("q:", q);
+				derivs[3*p]+= delta.x;
+				derivs[3*p + 1]+= delta.y;
+			}
+		}
+
+		return derivs;
+	}
+
+	step(currState, derivs, deltaT){
+		var state = new Float32Array(this.vertsLength);
+		for (let i = 0; i < this.yNum * this.xNum; ++i){
+			state[3*i + 0] = currState[3*i + 0] + deltaT * derivs[3*i + 0];
+			state[3*i + 1] = currState[3*i + 1] + deltaT * derivs[3*i + 0];
+		}
+		return state;
+	}
+
+	// // RK4
+	// updateRK(deltaT) {
+	// 	var s0 = this.currState.clone()
+	// 	var k1 = s0.derivs();
+	// 	var k2 = stepSp(s0, k1.clone(), 0.5*dT).derivs();
+	// 	var k3 = stepSp(s0, k2.clone(), 0.5*dT).derivs();
+	// 	var k4 = stepSp(s0, k3.clone(), dT).derivs();
+
+	// 	s0.add(k1, dT/6);
+	// 	s0.add(k2, dT/3);
+	// 	s0.add(k3, dT/3);
+	// 	s0.add(k4, dT/6);
+
+	// 	this.currState = s0;
+	// }
+
+	updateRK4(){
+		var k1 = this.derivs(this.verts);
+		var k2 = this.derivs(this.step(this.verts, k1, 0.5*dT));
+		var k3 = this.derivs(this.step(this.verts, k2, 0.5*dT));
+		var k4 = this.derivs(this.step(this.verts, k3, dT));
+
+		for(let i = 0; i < this.yNum * this.xNum; ++i){
+			var idx = 3*i;
+			this.verts[idx] += (dT)*(k1[idx]/6 + k2[idx]/3 + k3[idx]/3 + k4[idx]/6);
+			this.verts[idx + 1] +=  (dT)*(k1[idx+1]/6 + k2[idx+1]/3 + k3[idx+1]/3 + k4[idx+1]/6);
+			//console.log("idx: ", idx);
+			//console.log("v[idx]:", this.verts[idx]);
+			//console.log("v[idx+1]:", this.verts[idx+1]);
+			// if(Number.isNaN(this.verts[idx]) || Number.isNaN(this.verts[idx+1])){
+			// 	console.log("idx: ", idx);
+			// }
+		}
+
+		this.updateMeshes();
+	}
+
 	update(){
-		for(let p =  0; p < this.width * this.depth; ++p){				
+		for(let p =  0; p < this.yNum * this.xNum; ++p){				
 			var force = new THREE.Vector2(0,0);
 			var delta = 0;
-			for (let q = 0; q < this.width * this.depth; ++q){
+			for (let q = 0; q < this.yNum * this.xNum; ++q){
 				if (p == q)
 					continue;
 				
@@ -532,7 +440,7 @@ class VortexParticles {
 				delta.setX(-delta.y);
 				delta.setY(temp);
 				var len = delta.lengthSq()
-				var K = 0.01;
+				var K = 1.;
 				delta.multiplyScalar(K * this.verts[3*q +2]/len);
 				//console.log("force: ", force);
 				//console.log("p: ", p);
@@ -556,10 +464,16 @@ class VortexParticles {
 const fixedTimeStep = 1/60;
 const clock = new THREE.Clock();
 
-//var spModel = new ModelSp();
-//var blModel = new ModelBlock();
-//var clModel = new ModelCloth()
+
 var vp = new VortexParticles();
+
+console.log("Before delay");
+
+setTimeout(() => {
+    console.log("After 2 seconds delay");
+}, 4000); // 2000 milliseconds = 2 seconds
+
+console.log("After setting timeout");
 
 // The main workhorse.
 function animate() {
@@ -573,7 +487,8 @@ function animate() {
 	//clModel.updateMesh();
 	//clModel.updateMP();
 
-	vp.update();
+	//vp.update();
+	vp.updateRK4();
 
 	t += dT;
 	renderer.render( scene, camera );
