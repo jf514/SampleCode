@@ -52,7 +52,7 @@ const txloader = new THREE.TextureLoader();
 
 // Simulation constants.
 //const dT = 1/60;
-const dT = .1/60;
+const dT = .01/60;
 const dTH = .5 * dT;
 var steerModel = Math.PI/6.;  
 var t = 0.0;
@@ -122,7 +122,7 @@ window.onresize = function () {
 	// scene.add(bigCyl);
 	// bigCyl.position.set(0,0,0);
 
-	const R = .05
+	const R = .01
 	// mSa.position.set(R,0,0)
 	// mSb.position.set(-R,0,0)
 
@@ -213,8 +213,6 @@ function forceOnV0(currState, v0){
 	return force0.clone();
 }
 
-
-
 function updateInstancePosition(instancedMesh, index, position) {
 	const matrix = new THREE.Matrix4().makeTranslation(position.x, position.y, position.z);
 	instancedMesh.setMatrixAt(index, matrix);
@@ -259,8 +257,13 @@ class VortexParticles {
 		for(let y = 0; y < this.yNum; ++y){
 			for(let x = 0; x < this.xNum; ++x){
 				var idx = x + this.xNum * y;
-				var xCoord = dx*(x - 0.5*this.xNum);
-				var yCoord = dx*(y-0.5*this.yNum) + 0.1*Math.sin(6.28 * (x)/150);
+				//var xCoord = dx*(x - 0.5*this.xNum);
+				//var yCoord = dx*(y-0.5*this.yNum) + 0.1*Math.sin(6.28 * (x)/150);
+
+				var R = 3.1;
+				var xCoord = R * Math.cos(idx * 6.28/(this.xNum * this.yNum + 1)) + .01*R*Math.cos(15*idx*6.28/(this.xNum * this.yNum));
+				var yCoord = R * Math.sin(idx * 6.28/(this.xNum * this.yNum + 1)) + .01*R*Math.sin(15*idx*6.28/(this.xNum * this.yNum));
+
 				this.verts[3*idx] = xCoord;
 				this.verts[3*idx + 1] = yCoord;
 				
