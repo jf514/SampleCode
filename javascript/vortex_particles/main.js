@@ -22,18 +22,19 @@ const height = 50;
 const aspect = window.innerWidth / window.innerHeight;
 
 //const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const camera = new THREE.OrthographicCamera(-12, 
-											12, 
-											12,
-											-12,
+var w = 14;
+const camera = new THREE.OrthographicCamera(-w, 
+											w, 
+											w,
+											-w,
 											0.1, 
 											1000);
 camera.position.set(0, 0, 5);
 camera.lookAt(0, 0, 0);
 
 // DEBUG: Add some coordinate axes. R = X, green = Y, blue = Z.
-const axesHelper = new THREE.AxesHelper( 5 );
-scene.add( axesHelper );
+//const axesHelper = new THREE.AxesHelper( 5 );
+//scene.add( axesHelper );
 
 //Load background texture.
 const txloader = new THREE.TextureLoader();
@@ -52,9 +53,9 @@ const txloader = new THREE.TextureLoader();
 
 // Simulation constants.
 //const dT = 1/60;
-const dT = .01/60;
+const dT = 1/60;
 const dTH = .5 * dT;
-var steerModel = Math.PI/6.;  
+var steerModel = Math.PI/6.;
 var t = 0.0;
 
 ///////////////////////////////////////////////////////////////////
@@ -122,7 +123,7 @@ window.onresize = function () {
 	// scene.add(bigCyl);
 	// bigCyl.position.set(0,0,0);
 
-	const R = .01
+	const R = .02
 	// mSa.position.set(R,0,0)
 	// mSb.position.set(-R,0,0)
 
@@ -167,7 +168,7 @@ class VertexInfo {
 	constructor(pos, isFixed = false){
 		this.x = pos;
 		this.v = new THREE.Vector3();
-		this.m = .001;
+		this.m = .00000000001;
 		this.isFixed = isFixed;
 		this.verts = [];
 	}
@@ -257,17 +258,17 @@ class VortexParticles {
 		for(let y = 0; y < this.yNum; ++y){
 			for(let x = 0; x < this.xNum; ++x){
 				var idx = x + this.xNum * y;
-				//var xCoord = dx*(x - 0.5*this.xNum);
-				//var yCoord = dx*(y-0.5*this.yNum) + 0.1*Math.sin(6.28 * (x)/150);
+				var xCoord = dx*(x - 0.5*this.xNum);
+				var yCoord = dx*(y-0.5*this.yNum) + 0.1*Math.sin(6.28 * (x)/150);
 
-				var R = 3.1;
-				var xCoord = R * Math.cos(idx * 6.28/(this.xNum * this.yNum + 1)) + .01*R*Math.cos(15*idx*6.28/(this.xNum * this.yNum));
-				var yCoord = R * Math.sin(idx * 6.28/(this.xNum * this.yNum + 1)) + .01*R*Math.sin(15*idx*6.28/(this.xNum * this.yNum));
+				//var R = 3.1;
+				//var xCoord = R * Math.cos(idx * 6.28/(this.xNum * this.yNum + 1)) + .01*R*Math.cos(15*idx*6.28/(this.xNum * this.yNum));
+				//var yCoord = R * Math.sin(idx * 6.28/(this.xNum * this.yNum + 1)) + .01*R*Math.sin(15*idx*6.28/(this.xNum * this.yNum));
 
 				this.verts[3*idx] = xCoord;
 				this.verts[3*idx + 1] = yCoord;
 				
-				var K = 0.1; //spiral vorts
+				var K = 0.005; //spiral vorts
 				this.verts[3*idx + 2] = K;
 
 				// var rad = new THREE.Vector2(xCoord,yCoord);
