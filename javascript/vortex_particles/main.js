@@ -22,7 +22,7 @@ const height = 50;
 const aspect = window.innerWidth / window.innerHeight;
 
 //const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-var w = 14;
+var w = 3;
 const camera = new THREE.OrthographicCamera(-w, 
 											w, 
 											w,
@@ -123,7 +123,7 @@ window.onresize = function () {
 	// scene.add(bigCyl);
 	// bigCyl.position.set(0,0,0);
 
-	const R = .02
+	const R = .2
 	// mSa.position.set(R,0,0)
 	// mSb.position.set(-R,0,0)
 
@@ -243,8 +243,8 @@ function logInstanceDetails(instancedMesh, i) {
 }
 class VortexParticles {
 	constructor(){
-		this.yNum = 1;
-		this.xNum = 2000;
+		this.yNum = 2;
+		this.xNum = 1;
 		//this.xNum = 40;
 		//this.yNum = 40;
 		this.vertsLength = 3*this.yNum*this.xNum;
@@ -254,7 +254,7 @@ class VortexParticles {
 		this.yellowColor = new THREE.Color(1,1,0);
 		this.yellowIdxs = [];
 
-		var dx = .01;
+		var dx = 1;
 		for(let y = 0; y < this.yNum; ++y){
 			for(let x = 0; x < this.xNum; ++x){
 				var idx = x + this.xNum * y;
@@ -268,7 +268,7 @@ class VortexParticles {
 				this.verts[3*idx] = xCoord;
 				this.verts[3*idx + 1] = yCoord;
 				
-				var K = 0.005; //spiral vorts
+				var K = 0.5; //spiral vorts
 				this.verts[3*idx + 2] = K;
 
 				// var rad = new THREE.Vector2(xCoord,yCoord);
@@ -278,13 +278,13 @@ class VortexParticles {
 				// 	this.verts[3*idx + 2] = 1.0;
 				// }
 
-				// if(xCoord > 0){
-				// 	this.verts[3*idx + 2] = 1;
-				// 	this.yellowIdxs.push(idx);
-				// } else {
-				// 	this.verts[3*idx + 2] = 1;
-				// 	this.blueIdxs.push(idx);
-				// }
+				if(yCoord >= 0){
+					this.verts[3*idx + 2] = K;
+					this.yellowIdxs.push(idx);
+				} else {
+					this.verts[3*idx + 2] = -K;
+					this.blueIdxs.push(idx);
+				}
 				
 
 				// if((Math.abs(xCoord) < .7*(dx*this.xNum/2) && Math.abs(yCoord) < .5*(dx*this.yNum/2))){
@@ -313,7 +313,7 @@ class VortexParticles {
 				// }
 
 				//this.blueIdxs.push(idx);
-				this.yellowIdxs.push(idx);
+				//this.yellowIdxs.push(idx);
 			}
 		}
 
