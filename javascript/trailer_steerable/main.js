@@ -31,7 +31,7 @@ camera.lookAt(0, 0, 0);
 
 //Load background texture.
 const txloader = new THREE.TextureLoader();
-txloader.load('./Models/space_resized.png' , function(texture) {
+txloader.load('./Models/space_resized.webp' , function(texture) {
             scene.background = texture;  
            });
 
@@ -78,15 +78,23 @@ loader.load('./Models/Truck.glb', function (gltf) {
 );
 
 // Function to load i-th instance of a trailer.
-function LoadTrailer(i){
+let trailerScene = null
+function AddTrailer(i){
+	if(!trailerScene) return;
+	const model = trailerScene.clone()
+	model.position.set(0, 0, 0);
+	model.rotation.x = Math.PI/2;
+	const sc = 0.01;
+	model.scale.set(sc, sc, sc);
+	models[i+2] = model;
+	scene.add(model);
+}
+function LoadTrailer(){
 	loader.load('./Models/Trailer_15ft.glb', function (gltf) {
-		const model = gltf.scene;
-		model.position.set(0, 0, 0);
-		model.rotation.x = Math.PI/2;
-		const sc = 0.01;
-		model.scale.set(sc, sc, sc);
-		models[i+2] = model;
-		scene.add(model);
+			trailerScene = gltf.scene;
+			// Start with two trailers.
+			AddTrailer(0)
+			AddTrailer(1)
 		}
 		, function(xhr){
 			console.log((xhr.loaded/xhr.total * 100) + "% loaded")
@@ -96,9 +104,8 @@ function LoadTrailer(i){
 	);
 }
 
-// Start with two trailers.
-LoadTrailer(0);
-LoadTrailer(1);
+LoadTrailer();
+
 
 ///////////////////////////////////////////////////////////////////
 // DEBUG: Grid helper... useful for debugging velocity/scale issues.
@@ -175,7 +182,7 @@ document.addEventListener("pointerup",()=>{
 var trailerDir = 1;
 function addTrailer(event) {
 	var len = trailerChain.length;
-	LoadTrailer(len - 1);
+	AddTrailer(len - 1);
 	var theta = trailerChain[len - 1].theta;
 	trailerChain.push(new Trailer(3, 2, 5, theta+trailerDir*Math.PI/2));
 	trailerDir *= -1;
@@ -356,6 +363,7 @@ function updateGraphics(){
 	if(models.length == trailerChain.length + 1)
 	{
 		for(let i = 0; i < trailerChain.length; ++i){
+			if(!models[i+1]) continue
 			models[i+1].position.copy(trailerChain.at(i).getPos());
 			models[i+1].rotation.y = trailerChain.at(i).theta - Math.PI/2;
 		}
